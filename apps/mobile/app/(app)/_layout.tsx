@@ -1,0 +1,21 @@
+import { Stack } from 'expo-router';
+
+export default function AppLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="queue/[id]"
+        options={{
+          presentation: 'modal',
+          headerShown: true,
+          headerTitle: 'Response Details',
+        }}
+      />
+    </Stack>
+  );
+}

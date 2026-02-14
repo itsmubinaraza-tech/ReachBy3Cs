@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.next/
+.expo/
+coverage/
+playwright-report/
+*.lock
+pnpm-lock.yaml
+package-lock.json
+.turbo/
