@@ -267,3 +267,165 @@ export interface DailyMetrics {
   avg_review_time_ms: number | null;
   created_at: string;
 }
+
+// ============================================
+// Organization-Platform Junction
+// ============================================
+
+export interface OrganizationPlatform {
+  id: string;
+  organization_id: string;
+  platform_id: string;
+  is_enabled: boolean;
+  credentials: Record<string, unknown>;
+  search_config: Record<string, unknown>;
+  last_crawl_at: string | null;
+  crawl_status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// Automation Rules
+// ============================================
+
+export interface AutomationRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  conditions: {
+    risk_level?: RiskLevel;
+    cta_level?: CTALevel;
+    cts_score_min?: number;
+    emotional_intensity_min?: number;
+    platform_id?: string;
+  };
+  actions: {
+    action: 'auto_post' | 'notify' | 'block' | 'escalate';
+    delay_minutes?: number;
+    priority?: string;
+    notify_admin?: boolean;
+    log_reason?: boolean;
+  };
+  is_active: boolean;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// Database Insert Types (omit auto-generated fields)
+// ============================================
+
+export type OrganizationInsert = Omit<Organization, 'id' | 'created_at' | 'updated_at'>;
+export type UserInsert = Omit<User, 'created_at' | 'updated_at' | 'last_active_at'>;
+export type ProblemCategoryInsert = Omit<ProblemCategory, 'id' | 'created_at' | 'updated_at'>;
+export type PostInsert = Omit<Post, 'id' | 'detected_at'>;
+export type SignalInsert = Omit<Signal, 'id' | 'created_at'>;
+export type RiskScoreInsert = Omit<RiskScore, 'id' | 'created_at'>;
+export type ResponseInsert = Omit<Response, 'id' | 'created_at' | 'updated_at'>;
+export type ClusterInsert = Omit<Cluster, 'id' | 'created_at' | 'updated_at' | 'first_detected_at' | 'last_activity_at'>;
+export type EngagementQueueInsert = Omit<EngagementQueue, 'id' | 'created_at' | 'processed_at'>;
+export type AutomationRuleInsert = Omit<AutomationRule, 'id' | 'created_at' | 'updated_at'>;
+
+// ============================================
+// Database Update Types (all fields optional except id)
+// ============================================
+
+export type OrganizationUpdate = Partial<Omit<Organization, 'id' | 'created_at'>> & { id: string };
+export type UserUpdate = Partial<Omit<User, 'id' | 'created_at'>> & { id: string };
+export type ResponseUpdate = Partial<Omit<Response, 'id' | 'created_at'>> & { id: string };
+export type ClusterUpdate = Partial<Omit<Cluster, 'id' | 'created_at'>> & { id: string };
+
+// ============================================
+// Joined/Extended Types (for API responses)
+// ============================================
+
+export interface PostWithSignal extends Post {
+  signal: Signal | null;
+  platform: Platform;
+}
+
+export interface SignalWithRisk extends Signal {
+  risk_score: RiskScore | null;
+  post: Post;
+}
+
+export interface ResponseWithContext extends Response {
+  signal: SignalWithRisk;
+  cluster: Cluster | null;
+}
+
+export interface QueueItemWithResponse extends EngagementQueue {
+  response: ResponseWithContext;
+}
+
+export interface ClusterWithMembers extends Cluster {
+  members: ClusterMember[];
+  problem_category: ProblemCategory | null;
+}
+
+// ============================================
+// Settings Types
+// ============================================
+
+export interface OrganizationSettings {
+  theme: 'default' | 'dark' | 'light';
+  auto_post_enabled: boolean;
+  daily_post_limit: number;
+  review_required_risk_levels: RiskLevel[];
+  notification_channels: {
+    email: boolean;
+    push: boolean;
+    slack?: string;
+  };
+  crawl_schedule: {
+    frequency: 'hourly' | '4x_daily' | 'daily';
+    active_hours?: { start: number; end: number };
+  };
+}
+
+export interface UserNotificationPreferences {
+  push: boolean;
+  email: boolean;
+  queue_alerts: boolean;
+  daily_summary: boolean;
+  crisis_alerts: boolean;
+}
+
+// ============================================
+// Platform Search Config Types
+// ============================================
+
+export interface RedditSearchConfig {
+  subreddits: string[];
+  keywords: string[];
+  exclude_flairs?: string[];
+  min_upvotes?: number;
+}
+
+export interface TwitterSearchConfig {
+  keywords: string[];
+  hashtags?: string[];
+  exclude_accounts?: string[];
+  min_likes?: number;
+}
+
+export interface QuoraSearchConfig {
+  spaces: string[];
+  keywords: string[];
+  topics?: string[];
+}
+
+export interface GoogleSearchConfig {
+  queries: string[];
+  sites?: string[];
+  exclude_sites?: string[];
+}
+
+export type PlatformSearchConfig =
+  | RedditSearchConfig
+  | TwitterSearchConfig
+  | QuoraSearchConfig
+  | GoogleSearchConfig;

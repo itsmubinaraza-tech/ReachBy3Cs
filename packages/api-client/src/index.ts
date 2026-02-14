@@ -4,3 +4,6 @@ export * from './supabase';
 export * from './endpoints/auth';
 export * from './endpoints/queue';
 export * from './endpoints/responses';
+
+// Re-export repositories
+export * from './repositories';
