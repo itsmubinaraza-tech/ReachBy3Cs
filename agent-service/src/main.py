@@ -11,7 +11,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import health
+from src.api.routes import health, pipeline, skills
 from src.config import get_settings
 
 # Configure logging
@@ -83,6 +83,8 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(health.router, tags=["Health"])
+    app.include_router(skills.router)
+    app.include_router(pipeline.router)
 
     return app
 

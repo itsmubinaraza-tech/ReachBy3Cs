@@ -113,6 +113,27 @@ class Settings(BaseSettings):
         default=10, ge=1, description="Maximum agent loop iterations"
     )
 
+    # Reddit Configuration
+    reddit_client_id: str = Field(
+        default="", description="Reddit OAuth client ID"
+    )
+    reddit_client_secret: str = Field(
+        default="", description="Reddit OAuth client secret"
+    )
+    reddit_user_agent: str = Field(
+        default="ReachBy3Cs/1.0", description="Reddit API user agent"
+    )
+
+    # Twitter/X Configuration
+    twitter_bearer_token: str = Field(
+        default="", description="Twitter API v2 bearer token"
+    )
+
+    # Google/SerpAPI Configuration
+    serp_api_key: str = Field(
+        default="", description="SerpAPI API key for Google search"
+    )
+
     @property
     def is_development(self) -> bool:
         """Check if running in development mode."""
