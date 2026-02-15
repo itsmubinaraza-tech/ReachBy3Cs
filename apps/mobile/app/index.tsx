@@ -1,11 +1,9 @@
 import { Redirect } from 'expo-router';
 import { View, Text, ActivityIndicator } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
-  // TODO: Check auth state and redirect accordingly
-  // For now, show a loading screen and redirect to auth
-  const isLoading = false;
-  const isAuthenticated = false;
+  const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     return (

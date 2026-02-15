@@ -5,7 +5,7 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,50 +16,13 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useQueue, type QueueItem } from '../../../hooks/useQueue';
+import type { RiskLevel } from 'shared-types';
 
-// Mock data for queue items
-const MOCK_QUEUE = [
-  {
-    id: '1',
-    platform: 'reddit',
-    subreddit: 'r/relationships',
-    originalText: "I've been struggling to communicate with my partner about finances...",
-    responsePreview: 'I hear you - financial conversations can be really charged...',
-    riskLevel: 'low' as const,
-    ctaLevel: 0,
-    ctsScore: 0.85,
-    canAutoPost: true,
-    createdAt: '2h ago',
-  },
-  {
-    id: '2',
-    platform: 'twitter',
-    subreddit: null,
-    originalText: 'How do I tell my boss I need a mental health day?',
-    responsePreview: "It's great that you're prioritizing your wellbeing...",
-    riskLevel: 'medium' as const,
-    ctaLevel: 1,
-    ctsScore: 0.72,
-    canAutoPost: false,
-    createdAt: '3h ago',
-  },
-  {
-    id: '3',
-    platform: 'reddit',
-    subreddit: 'r/emotionalintelligence',
-    originalText: "I can't seem to understand why I react so strongly to criticism...",
-    responsePreview: 'Strong reactions to criticism often stem from...',
-    riskLevel: 'low' as const,
-    ctaLevel: 0,
-    ctsScore: 0.91,
-    canAutoPost: true,
-    createdAt: '4h ago',
-  },
-];
+type FilterOption = 'all' | 'low' | 'medium' | 'high';
+type SortOption = 'created' | 'cts' | 'risk';
 
-type QueueItem = (typeof MOCK_QUEUE)[0];
-
-function getRiskColor(level: 'low' | 'medium' | 'high' | 'blocked') {
+function getRiskColor(level: RiskLevel) {
   const colors = {
     low: 'bg-green-100 text-green-700',
     medium: 'bg-yellow-100 text-yellow-700',
@@ -75,9 +38,26 @@ function getPlatformIcon(platform: string) {
       return 'logo-reddit';
     case 'twitter':
       return 'logo-twitter';
+    case 'quora':
+      return 'help-circle-outline';
     default:
       return 'globe-outline';
   }
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }
 
 function QueueItemCard({
@@ -160,10 +140,16 @@ function QueueItemCard({
                   color="#3b82f6"
                 />
                 <Text className="ml-2 text-sm font-medium text-gray-700">
-                  {item.subreddit || item.platform}
+                  {item.platformName}
                 </Text>
+                {item.clusterName && (
+                  <View className="ml-2 flex-row items-center">
+                    <Ionicons name="people-outline" size={14} color="#6b7280" />
+                    <Text className="ml-1 text-xs text-gray-500">{item.clusterName}</Text>
+                  </View>
+                )}
               </View>
-              <Text className="text-xs text-gray-400">{item.createdAt}</Text>
+              <Text className="text-xs text-gray-400">{formatTimeAgo(item.createdAt)}</Text>
             </View>
 
             {/* Original text preview */}
@@ -205,40 +191,160 @@ function QueueItemCard({
   );
 }
 
+interface FilterButtonProps {
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+}
+
+function FilterButton({ label, isActive, onPress }: FilterButtonProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className={`rounded-full px-3 py-1 ${isActive ? 'bg-gray-900' : 'bg-gray-100'}`}
+    >
+      <Text className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-700'}`}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function QueueScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [queue, setQueue] = useState(MOCK_QUEUE);
+  const [filter, setFilter] = useState<FilterOption>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('created');
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // TODO: Fetch fresh queue data
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setRefreshing(false);
-  };
+  const {
+    items,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+    approve,
+    reject,
+    pendingActionsCount,
+  } = useQueue({ filter, sortBy });
 
-  const handleApprove = (id: string) => {
-    Alert.alert('Approved', `Response ${id} has been approved.`);
-    setQueue((prev) => prev.filter((item) => item.id !== id));
-  };
+  const handleApprove = useCallback(
+    async (id: string) => {
+      await approve(id);
+    },
+    [approve]
+  );
 
-  const handleReject = (id: string) => {
-    Alert.alert('Rejected', `Response ${id} has been rejected.`);
-    setQueue((prev) => prev.filter((item) => item.id !== id));
-  };
+  const handleReject = useCallback(
+    async (id: string) => {
+      await reject(id);
+    },
+    [reject]
+  );
+
+  const handleFilterPress = useCallback((newFilter: FilterOption) => {
+    setFilter(newFilter);
+  }, []);
+
+  const handleSortPress = useCallback((newSort: SortOption) => {
+    setSortBy(newSort);
+  }, []);
+
+  // Loading state
+  if (isLoading && items.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="mt-4 text-gray-600">Loading queue...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error && items.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50 px-8">
+        <Ionicons name="cloud-offline-outline" size={48} color="#ef4444" />
+        <Text className="mt-4 text-center text-lg font-medium text-gray-900">
+          Unable to load queue
+        </Text>
+        <Text className="mt-2 text-center text-sm text-gray-500">{error}</Text>
+        <TouchableOpacity
+          onPress={refresh}
+          className="mt-6 rounded-lg bg-blue-500 px-6 py-3"
+        >
+          <Text className="font-medium text-white">Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Pending sync indicator */}
+      {pendingActionsCount > 0 && (
+        <View className="flex-row items-center justify-center bg-yellow-50 py-2">
+          <Ionicons name="sync-outline" size={14} color="#ca8a04" />
+          <Text className="ml-2 text-xs text-yellow-700">
+            {pendingActionsCount} action{pendingActionsCount > 1 ? 's' : ''} pending sync
+          </Text>
+        </View>
+      )}
+
       {/* Filter bar */}
-      <View className="flex-row items-center gap-2 bg-white px-4 py-3 shadow-sm">
-        <TouchableOpacity className="rounded-full bg-gray-900 px-3 py-1">
-          <Text className="text-sm font-medium text-white">All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity className="rounded-full bg-gray-100 px-3 py-1">
-          <Text className="text-sm font-medium text-gray-700">Low Risk</Text>
-        </TouchableOpacity>
-        <TouchableOpacity className="rounded-full bg-gray-100 px-3 py-1">
-          <Text className="text-sm font-medium text-gray-700">High CTS</Text>
-        </TouchableOpacity>
+      <View className="bg-white px-4 py-3 shadow-sm">
+        <View className="flex-row items-center gap-2">
+          <FilterButton
+            label="All"
+            isActive={filter === 'all'}
+            onPress={() => handleFilterPress('all')}
+          />
+          <FilterButton
+            label="Low Risk"
+            isActive={filter === 'low'}
+            onPress={() => handleFilterPress('low')}
+          />
+          <FilterButton
+            label="Medium"
+            isActive={filter === 'medium'}
+            onPress={() => handleFilterPress('medium')}
+          />
+          <FilterButton
+            label="High"
+            isActive={filter === 'high'}
+            onPress={() => handleFilterPress('high')}
+          />
+        </View>
+
+        {/* Sort options */}
+        <View className="mt-2 flex-row items-center gap-2">
+          <Text className="text-xs text-gray-500">Sort:</Text>
+          <TouchableOpacity
+            onPress={() => handleSortPress('created')}
+            className={`rounded px-2 py-0.5 ${sortBy === 'created' ? 'bg-blue-100' : ''}`}
+          >
+            <Text
+              className={`text-xs ${sortBy === 'created' ? 'text-blue-700' : 'text-gray-600'}`}
+            >
+              Recent
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleSortPress('cts')}
+            className={`rounded px-2 py-0.5 ${sortBy === 'cts' ? 'bg-blue-100' : ''}`}
+          >
+            <Text className={`text-xs ${sortBy === 'cts' ? 'text-blue-700' : 'text-gray-600'}`}>
+              High CTS
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleSortPress('risk')}
+            className={`rounded px-2 py-0.5 ${sortBy === 'risk' ? 'bg-blue-100' : ''}`}
+          >
+            <Text
+              className={`text-xs ${sortBy === 'risk' ? 'text-blue-700' : 'text-gray-600'}`}
+            >
+              Risk Level
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Swipe hint */}
@@ -248,9 +354,17 @@ export default function QueueScreen() {
         <Ionicons name="arrow-forward" size={14} color="#22c55e" />
       </View>
 
+      {/* Error banner (when we have cached data but fetch failed) */}
+      {error && items.length > 0 && (
+        <View className="flex-row items-center justify-center bg-red-50 py-2">
+          <Ionicons name="warning-outline" size={14} color="#ef4444" />
+          <Text className="ml-2 text-xs text-red-600">Using cached data - {error}</Text>
+        </View>
+      )}
+
       {/* Queue list */}
       <FlatList
-        data={queue}
+        data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <QueueItemCard
@@ -260,13 +374,22 @@ export default function QueueScreen() {
           />
         )}
         contentContainerStyle={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
+        }
         ListEmptyComponent={
           <View className="items-center justify-center py-12">
             <Ionicons name="checkmark-circle" size={48} color="#22c55e" />
             <Text className="mt-4 text-lg font-medium text-gray-900">All caught up!</Text>
             <Text className="mt-1 text-sm text-gray-500">No pending items to review</Text>
           </View>
+        }
+        ListHeaderComponent={
+          items.length > 0 ? (
+            <Text className="mb-2 text-xs text-gray-500">
+              {items.length} item{items.length !== 1 ? 's' : ''} pending review
+            </Text>
+          ) : null
         }
       />
     </View>

@@ -1,4 +1,15 @@
-# Needs-Matched Engagement Platform
+# ReachBy3Cs - AI-Powered Engagement Platform
+
+## Brand Identity
+
+**Name**: ReachBy3Cs
+**Tagline**: Communicate. Connect. Community.
+**Domain**: reachby3cs.com
+
+The 3Cs represent the core pillars:
+- **Communicate**: AI detects high-intent conversations and generates authentic responses
+- **Connect**: Engage at scale without being spammy, with smart CTA controls
+- **Community**: Turn scattered conversations into organized communities
 
 ## Project Overview
 
@@ -19,6 +30,10 @@ A multi-tenant SaaS platform that identifies high-intent conversations online, s
 /
 ├── apps/
 │   ├── web/          # Next.js web application
+│   │   ├── src/app/  # Pages (landing, dashboard, queue, etc.)
+│   │   ├── src/components/  # UI components
+│   │   ├── src/hooks/       # Custom React hooks
+│   │   └── src/contexts/    # React contexts
 │   └── mobile/       # React Native/Expo mobile app
 ├── packages/
 │   ├── shared-types/ # Shared TypeScript types
@@ -27,6 +42,22 @@ A multi-tenant SaaS platform that identifies high-intent conversations online, s
 ├── agent-service/    # Python AI service
 └── supabase/         # Database migrations & config
 ```
+
+## User Flows
+
+### Free Trial Flow
+1. User visits landing page (/)
+2. Clicks "Start Free Trial" or "Try Free Demo"
+3. Trial tracked in localStorage (10 uses max)
+4. User sees dashboard with trial banner showing remaining uses
+5. When trial expires, redirected to signup
+
+### Authenticated Flow
+1. User signs up/logs in
+2. Creates or joins organization
+3. Accesses dashboard, queue, analytics
+4. Approves/rejects AI-generated responses
+5. Mobile users can swipe to approve/reject
 
 ## Coding Conventions
 
@@ -87,13 +118,16 @@ A multi-tenant SaaS platform that identifies high-intent conversations online, s
 - `C:\Users\Mubina\.claude\plans\fancy-sauteeing-flurry.md` - Full implementation plan
 - `supabase/migrations/` - Database schema with audit trail
 - `apps/web/src/middleware.ts` - Auth middleware
+- `apps/web/src/app/page.tsx` - Landing page with 3Cs branding
+- `apps/web/src/hooks/use-trial.ts` - Free trial tracking hook
+- `apps/web/src/components/trial/trial-banner.tsx` - Trial status banner
 - `agent-service/src/agents/engagement_pipeline.py` - LangGraph workflow
 
 ## Commands
 
 ```bash
 # Development
-npm run dev           # Start web app
+npm run dev           # Start web app (http://localhost:3000)
 npm run dev:mobile    # Start Expo dev server
 npm run dev:all       # Start all apps
 
@@ -109,7 +143,23 @@ npm run typecheck     # Check TypeScript
 # Database
 npx supabase start    # Start local Supabase
 npx supabase db reset # Reset database with migrations
+npx supabase db push --linked  # Push to cloud Supabase
 ```
+
+## Environment Variables
+
+### Web App (apps/web/.env.local)
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_DEMO_MODE=false
+```
+
+### Vercel Deployment
+Set these in Vercel dashboard:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_DEMO_MODE`
 
 ## Feature Development Workflow
 
@@ -121,17 +171,17 @@ npx supabase db reset # Reset database with migrations
 6. Mark task complete only when ALL tests pass
 7. Do NOT proceed to next feature until current feature is fully tested
 
-## Implementation Progress (Updated: 2026-02-14)
+## Implementation Progress (Updated: 2026-02-15)
 
 ### Phase 1: Foundation - COMPLETE
 - [x] Feature 1: Project Setup & Infrastructure
 - [x] Feature 2: Database Schema & Migrations (15+ tables, RLS, audit trail)
 - [x] Feature 3: Authentication & Multi-tenancy (Supabase Auth, RBAC with 4 roles)
 - [x] Feature 4: Dashboard Layout & Navigation (responsive, mobile-first)
+- [x] Feature 5: React Native Mobile App Setup (auth, queue, swipe gestures)
 
-### Phase 2: Core AI Skills - PENDING
-- [ ] Feature 5: React Native Mobile App Setup
-- [ ] Feature 6: Python Agent Service Setup (FastAPI + LangGraph)
+### Phase 2: Core AI Skills - IN PROGRESS
+- [x] Feature 6: Python Agent Service Setup (FastAPI + LangGraph)
 - [ ] Feature 7: Signal Detection Skill
 - [ ] Feature 8: Risk Scoring Skill
 - [ ] Feature 9: Response Generation Skill
@@ -148,20 +198,42 @@ npx supabase db reset # Reset database with migrations
 - [ ] Feature 16: Community Cluster Detection
 - [ ] Feature 17: Tenant Onboarding & Settings
 
+### Additional Features - COMPLETE
+- [x] Landing Page: ReachBy3Cs branding with 3Cs sections
+- [x] Free Trial System: 10 uses with localStorage tracking
+- [x] Trial Banner: Shows remaining uses in dashboard
+- [x] Database Seeded: Test data for WeAttuned organization
+- [ ] Interactive Walkthrough: Guided tour for new users (pending)
+
 ## Current Test Status
 
-- **Total Tests**: 117 passing
+- **Total Tests**: 117+ passing
 - **shared-utils**: 88 tests (validation + formatting)
 - **api-client**: 11 tests (client operations)
 - **web**: 18 tests (utility functions)
-- **mobile**: No tests yet (--passWithNoTests)
+- **mobile**: Tests pending (--passWithNoTests)
+- **agent-service**: Python service ready for testing
+
+## Demo Ready
+
+Run `npm run dev` and visit http://localhost:3000 to see:
+- **Landing Page**: 3Cs branding, value props, how it works, signup CTA
+- **Dashboard**: Stats and recent activity (at /dashboard)
+- **Queue**: Approve/reject functionality (at /dashboard/queue)
+- **Trial Banner**: Shows remaining free trial uses
+- **Responsive Layout**: Mobile/tablet/desktop views
 
 ## Key Files Created
+
+### Landing & Trial System
+- `apps/web/src/app/page.tsx` - Landing page with 3Cs branding
+- `apps/web/src/hooks/use-trial.ts` - Trial tracking hook
+- `apps/web/src/components/trial/trial-banner.tsx` - Trial status banner
 
 ### Database
 - `supabase/migrations/20260213000001_initial_schema.sql` - Full schema
 - `supabase/config.toml` - Local Supabase config
-- `supabase/seed.sql` - Development seed data
+- `supabase/seed.sql` - Development seed data (organizations, posts, responses, etc.)
 
 ### Packages
 - `packages/shared-types/src/database.ts` - All DB types + insert/update helpers
@@ -174,3 +246,39 @@ npx supabase db reset # Reset database with migrations
 - `apps/web/src/lib/auth/rbac.ts` - Role-based permissions (25+ permissions)
 - `apps/web/src/components/layout/` - Responsive navigation components
 - `apps/web/src/hooks/` - Device detection, keyboard shortcuts, sidebar state
+- `apps/web/src/app/(dashboard)/dashboard/page.tsx` - Dashboard with stats
+- `apps/web/src/app/(dashboard)/dashboard/queue/page.tsx` - Queue with approve/reject
+- `apps/web/vercel.json` - Vercel deployment config
+
+### Mobile App
+- `apps/mobile/lib/supabase.ts` - Supabase client with secure storage
+- `apps/mobile/lib/storage.ts` - MMKV offline storage
+- `apps/mobile/contexts/AuthContext.tsx` - Mobile auth management
+- `apps/mobile/contexts/OrganizationContext.tsx` - Organization context
+- `apps/mobile/hooks/useQueue.ts` - Queue data with offline sync
+- `apps/mobile/app/(auth)/login.tsx` - Login with biometrics
+- `apps/mobile/app/(auth)/signup.tsx` - Signup with validation
+- `apps/mobile/app/(auth)/forgot-password.tsx` - Password reset
+- `apps/mobile/app/(app)/(tabs)/queue.tsx` - Swipe-to-approve queue
+- `apps/mobile/app/(app)/queue/[id].tsx` - Full response detail view
+
+### Python Agent Service
+- `agent-service/pyproject.toml` - Dependencies (FastAPI, LangGraph, etc.)
+- `agent-service/src/main.py` - FastAPI app entry point
+- `agent-service/src/config.py` - Pydantic settings management
+- `agent-service/src/api/routes/health.py` - Health check endpoints
+- `agent-service/Dockerfile` - Container configuration
+
+## Deployment
+
+### Vercel (Web App)
+1. Push code to GitHub
+2. Import repository in Vercel
+3. Set Root Directory to `apps/web`
+4. Add environment variables
+5. Deploy
+
+### Supabase (Database)
+- Project URL: https://ocdtplwgyxemjqlkvegp.supabase.co
+- Migrations pushed with `npx supabase db push --linked`
+- Seed data loaded with `npx supabase db reset --linked`
