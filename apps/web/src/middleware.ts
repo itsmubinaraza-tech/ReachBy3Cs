@@ -1,32 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-// Routes that don't require authentication
-const publicRoutes = [
-  '/',
-  '/login',
-  '/signup',
-  '/forgot-password',
-  '/reset-password',
-  '/auth/callback',
-  '/auth/confirm',
-];
-
-// Demo routes - allow access for testing without auth
-// In demo mode, all dashboard routes are accessible
-const demoRoutes = ['/dashboard'];
-
 // Routes that should redirect to dashboard if already authenticated
 const authRoutes = ['/login', '/signup', '/forgot-password'];
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
-
-  // Check if the path is a public route
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith('/auth/')
-  );
 
   // Check if the path is an auth route (login, signup, etc.)
   const isAuthRoute = authRoutes.some((route) => pathname === route);
