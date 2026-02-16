@@ -177,7 +177,7 @@ export default function DashboardPage() {
               </ul>
               <div className="p-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
                 <Link
-                  href="/dashboard/activity"
+                  href="/dashboard/analytics/realtime"
                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   View all activity

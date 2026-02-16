@@ -6,8 +6,13 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
   "scripts": {
-    "build": "turbo build",
+    "build": "turbo build --filter=web...",
+    "build:all": "turbo build",
     "dev": "turbo dev --filter=web",
     "dev:mobile": "turbo dev --filter=mobile",
     "dev:all": "turbo dev",
