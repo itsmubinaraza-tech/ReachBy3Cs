@@ -24,7 +24,7 @@
     "clean": "turbo clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "prepare": "npx husky || echo 'Husky not available, skipping'"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
