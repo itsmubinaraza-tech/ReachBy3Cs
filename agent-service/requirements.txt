@@ -1,0 +1,13 @@
+# ReachBy3Cs Agent Service Dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+langgraph>=0.0.30
+supabase>=2.3.0
+python-dotenv>=1.0.0
+httpx>=0.26.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+hdbscan>=0.8.33
+openai>=1.0.0
