@@ -9,6 +9,7 @@ from src.skills.cts_decision import CTSDecisionSkill
 from src.skills.response_generation import ResponseGenerationSkill
 from src.skills.risk_scoring import RiskScoringSkill
 from src.skills.signal_detection import SignalDetectionSkill
+from src.clustering import ClusteringSkill
 
 __all__ = [
     "CTAClassifierSkill",
@@ -16,4 +17,5 @@ __all__ = [
     "ResponseGenerationSkill",
     "RiskScoringSkill",
     "SignalDetectionSkill",
+    "ClusteringSkill",
 ]

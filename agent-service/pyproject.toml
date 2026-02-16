@@ -18,6 +18,9 @@ dependencies = [
     "supabase>=2.3.0",
     "python-dotenv>=1.0.0",
     "httpx>=0.26.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.4.0",
+    "hdbscan>=0.8.33",
 ]
 
 [project.optional-dependencies]

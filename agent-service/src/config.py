@@ -123,10 +123,42 @@ class Settings(BaseSettings):
     reddit_user_agent: str = Field(
         default="ReachBy3Cs/1.0", description="Reddit API user agent"
     )
+    reddit_username: str = Field(
+        default="", description="Reddit username for posting"
+    )
+    reddit_password: SecretStr = Field(
+        default=SecretStr(""), description="Reddit password for posting"
+    )
 
     # Twitter/X Configuration
     twitter_bearer_token: str = Field(
         default="", description="Twitter API v2 bearer token"
+    )
+    twitter_api_key: str = Field(
+        default="", description="Twitter API key (consumer key)"
+    )
+    twitter_api_secret: SecretStr = Field(
+        default=SecretStr(""), description="Twitter API secret (consumer secret)"
+    )
+    twitter_access_token: str = Field(
+        default="", description="Twitter OAuth access token"
+    )
+    twitter_access_token_secret: SecretStr = Field(
+        default=SecretStr(""), description="Twitter OAuth access token secret"
+    )
+
+    # Auto-posting Configuration
+    auto_post_enabled: bool = Field(
+        default=False, description="Enable auto-posting globally"
+    )
+    auto_post_check_interval: int = Field(
+        default=300, ge=60, description="Seconds between auto-post checks"
+    )
+    auto_post_max_daily: int = Field(
+        default=50, ge=0, description="Maximum daily auto-posts per org"
+    )
+    auto_post_max_hourly: int = Field(
+        default=10, ge=0, description="Maximum hourly auto-posts per org"
     )
 
     # Google/SerpAPI Configuration
