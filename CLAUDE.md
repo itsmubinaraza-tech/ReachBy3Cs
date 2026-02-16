@@ -15,14 +15,64 @@ The 3Cs represent the core pillars:
 
 A multi-tenant SaaS platform that identifies high-intent conversations online, scores risk, generates contextual responses, and builds communities around recurring issues. The first tenant is weattuned.com (Emotional Intelligence app).
 
-## Architecture
+## Current Phase: Phase 1 (Human-in-the-Loop)
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         PHASE 1 ARCHITECTURE                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                │
+│  │  SerpAPI    │───▶│   Python    │───▶│  Supabase   │                │
+│  │  (Search)   │    │   Agent     │    │  Database   │                │
+│  │             │    │   Service   │    │             │                │
+│  │ Finds posts │    │ AI Skills:  │    │ Stores:     │                │
+│  │ on Reddit,  │    │ - Signal    │    │ - Posts     │                │
+│  │ Twitter,    │    │ - Risk      │    │ - Signals   │                │
+│  │ Quora, HN   │    │ - Response  │    │ - Responses │                │
+│  │ via Google  │    │ - CTA/CTS   │    │ - Queue     │                │
+│  └─────────────┘    └─────────────┘    └─────────────┘                │
+│                            │                  │                        │
+│                            ▼                  ▼                        │
+│                     ┌─────────────────────────────┐                   │
+│                     │   Vercel (Next.js Web App)  │                   │
+│                     │                             │                   │
+│                     │  Dashboard ──▶ Queue ──▶ Analytics             │
+│                     └─────────────────────────────┘                   │
+│                                   │                                    │
+│                                   ▼                                    │
+│                     ┌─────────────────────────────┐                   │
+│                     │      HUMAN REVIEWER         │                   │
+│                     │                             │                   │
+│                     │  1. Review AI response      │                   │
+│                     │  2. Click "Approve"         │                   │
+│                     │  3. Click "Copy Response"   │                   │
+│                     │  4. Click "Open Original"   │                   │
+│                     │  5. Paste & Post manually   │ ◀── Manual Step  │
+│                     │  6. Mark as "Posted"        │                   │
+│                     └─────────────────────────────┘                   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Why Phase 1 (Manual Posting)?
+
+- **Reddit API**: Registration process is complex/blocked
+- **Twitter/X API**: In progress
+- **Solution**: Use SerpAPI to FIND posts, human posts responses manually
+- **Benefit**: Works immediately without waiting for API approvals
+
+### Tech Stack
 
 - **Monorepo**: Turborepo with npm workspaces
-- **Web App**: Next.js 14+ (App Router) on Vercel
-- **Mobile App**: React Native + Expo (iOS & Android)
+- **Web App**: Next.js 14+ (App Router) on Vercel - DEPLOYED
+- **Mobile App**: React Native + Expo (future)
+- **Search**: SerpAPI (Google search across platforms)
 - **Backend**: Python FastAPI + LangGraph for AI agents
 - **Database**: Supabase (PostgreSQL with RLS)
-- **LLM**: Self-hosted Llama/Mistral on vLLM
+- **LLM**: OpenAI GPT-4 / Claude API
 
 ## Directory Structure
 
@@ -148,18 +198,32 @@ npx supabase db push --linked  # Push to cloud Supabase
 
 ## Environment Variables
 
-### Web App (apps/web/.env.local)
+### Web App - Vercel (apps/web)
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 NEXT_PUBLIC_DEMO_MODE=false
 ```
 
-### Vercel Deployment
-Set these in Vercel dashboard:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_DEMO_MODE`
+### Python Agent Service - Railway/Render (agent-service)
+```
+# Database
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+
+# Search (Phase 1)
+SERPAPI_API_KEY=xxx
+
+# LLM
+OPENAI_API_KEY=sk-xxx
+
+# Platform APIs (Phase 2 - when available)
+TWITTER_API_KEY=xxx
+TWITTER_API_SECRET=xxx
+TWITTER_ACCESS_TOKEN=xxx
+TWITTER_ACCESS_SECRET=xxx
+```
 
 ## Feature Development Workflow
 
@@ -180,29 +244,35 @@ Set these in Vercel dashboard:
 - [x] Feature 4: Dashboard Layout & Navigation (responsive, mobile-first)
 - [x] Feature 5: React Native Mobile App Setup (auth, queue, swipe gestures)
 
-### Phase 2: Core AI Skills - IN PROGRESS
+### Phase 2: Core AI Skills - COMPLETE (Code Written)
 - [x] Feature 6: Python Agent Service Setup (FastAPI + LangGraph)
-- [ ] Feature 7: Signal Detection Skill
-- [ ] Feature 8: Risk Scoring Skill
-- [ ] Feature 9: Response Generation Skill
-- [ ] Feature 10: CTA Classifier & CTS Decision Skills
+- [x] Feature 7: Signal Detection Skill
+- [x] Feature 8: Risk Scoring Skill
+- [x] Feature 9: Response Generation Skill
+- [x] Feature 10: CTA Classifier & CTS Decision Skills
 
-### Phase 3: Engagement Pipeline - PENDING
-- [ ] Feature 11: Platform Crawlers (Reddit, Twitter, Quora, Google)
-- [ ] Feature 12: Engagement Queue UI (Web + Mobile)
-- [ ] Feature 13: Response Posting System
-- [ ] Feature 14: Auto-post Automation
+### Phase 3: Engagement Pipeline - COMPLETE (Code Written)
+- [x] Feature 11: Platform Crawlers (updating to SerpAPI)
+- [x] Feature 12: Engagement Queue UI (Web + Mobile)
+- [x] Feature 13: Response Posting System (manual copy/paste workflow)
+- [ ] Feature 14: Auto-post Automation (Phase 2 - needs platform APIs)
 
-### Phase 4: Analytics & Community - PENDING
-- [ ] Feature 15: Analytics Dashboard
-- [ ] Feature 16: Community Cluster Detection
-- [ ] Feature 17: Tenant Onboarding & Settings
+### Phase 4: Analytics & Community - COMPLETE (Code Written)
+- [x] Feature 15: Analytics Dashboard
+- [x] Feature 16: Community Cluster Detection
+- [x] Feature 17: Tenant Onboarding & Settings
 
-### Additional Features - COMPLETE
+### Deployment Status
+- [x] Web App deployed on Vercel
+- [ ] Supabase database configured (needs env vars)
+- [ ] SerpAPI integration (needs API key)
+- [ ] Python agent service deployed (needs Railway/Render)
+- [ ] First end-to-end test
+
+### Additional Features
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
 - [x] Free Trial System: 10 uses with localStorage tracking
 - [x] Trial Banner: Shows remaining uses in dashboard
-- [x] Database Seeded: Test data for WeAttuned organization
 - [ ] Interactive Walkthrough: Guided tour for new users (pending)
 
 ## Current Test Status
