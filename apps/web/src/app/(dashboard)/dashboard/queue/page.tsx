@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useDeviceType } from '@/hooks';
 import { useKeyboardQueue, useKeyboardHints } from '@/hooks/use-keyboard-queue';
 import { useRealtimeQueue } from '@/hooks/use-realtime-queue';
+import { useQueue } from '@/hooks/use-queue';
 import { cn } from '@/lib/utils';
 import {
   QueueFilters,
@@ -21,8 +22,8 @@ import { approveResponse, rejectResponse, editResponse, bulkApprove, bulkReject 
 import { mockQueueItems } from '@/lib/mock-data';
 import type { QueueItemDisplay, ResponseType, RiskLevel, DeviceType as DeviceTypeEnum } from 'shared-types';
 
-// Use mock data for now - in production, use the useQueue hook
-const USE_MOCK_DATA = true;
+// Use real Supabase data - set to true for demo mode with mock data
+const USE_MOCK_DATA = false;
 
 // Map device type hook output to database enum
 function mapDeviceType(type: 'mobile' | 'tablet' | 'desktop'): DeviceTypeEnum {
@@ -56,9 +57,34 @@ export default function QueuePage() {
     to: null,
   });
 
-  // Queue data (using mock data for now)
-  const [queueItems, setQueueItems] = useState<QueueItemDisplay[]>(mockQueueItems);
+  // Queue data - use real data from Supabase or mock data for demo
+  const {
+    items: supabaseItems,
+    isLoading: supabaseLoading,
+    error: supabaseError,
+    refresh: refreshQueue,
+    counts: supabaseCounts,
+  } = useQueue();
+
+  // State for local queue management (for optimistic updates)
+  const [localQueueItems, setLocalQueueItems] = useState<QueueItemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if we should use mock data (either flag is set or user is not authenticated)
+  const shouldUseMockData = USE_MOCK_DATA || (!user && supabaseError);
+
+  // Sync supabase items to local state
+  useEffect(() => {
+    if (shouldUseMockData) {
+      setLocalQueueItems(mockQueueItems);
+    } else if (supabaseItems.length > 0 || !supabaseLoading) {
+      setLocalQueueItems(supabaseItems);
+    }
+  }, [supabaseItems, supabaseLoading, shouldUseMockData]);
+
+  // Use appropriate data source
+  const queueItems = shouldUseMockData ? mockQueueItems : localQueueItems;
+  const setQueueItems = setLocalQueueItems;
 
   // Selection and focus state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -190,7 +216,7 @@ export default function QueuePage() {
 
       setIsActioning(true);
       try {
-        if (USE_MOCK_DATA) {
+        if (shouldUseMockData) {
           // Optimistic update for mock data
           setQueueItems((items) =>
             items.map((item) =>
@@ -230,7 +256,7 @@ export default function QueuePage() {
 
       setIsActioning(true);
       try {
-        if (USE_MOCK_DATA) {
+        if (shouldUseMockData) {
           setQueueItems((items) =>
             items.map((item) =>
               item.id === id ? { ...item, status: 'rejected' as const } : item
@@ -271,7 +297,7 @@ export default function QueuePage() {
     async (newText: string) => {
       if (!editingItem) return;
 
-      if (USE_MOCK_DATA) {
+      if (shouldUseMockData) {
         setQueueItems((items) =>
           items.map((item) =>
             item.id === editingItem.id
@@ -320,7 +346,7 @@ export default function QueuePage() {
     try {
       const ids = Array.from(selectedIds);
 
-      if (USE_MOCK_DATA) {
+      if (shouldUseMockData) {
         setQueueItems((items) =>
           items.map((item) =>
             selectedIds.has(item.id) ? { ...item, status: 'approved' as const } : item
@@ -357,7 +383,7 @@ export default function QueuePage() {
       try {
         const ids = Array.from(selectedIds);
 
-        if (USE_MOCK_DATA) {
+        if (shouldUseMockData) {
           setQueueItems((items) =>
             items.map((item) =>
               selectedIds.has(item.id) ? { ...item, status: 'rejected' as const } : item
@@ -431,10 +457,14 @@ export default function QueuePage() {
   }, [editingItem]);
 
   // Handle refresh
-  const handleRefresh = useCallback(() => {
-    // In production, refetch from server
-    showNotification('success', 'Queue refreshed');
-  }, [showNotification]);
+  const handleRefresh = useCallback(async () => {
+    if (shouldUseMockData) {
+      showNotification('success', 'Queue refreshed');
+    } else {
+      await refreshQueue();
+      showNotification('success', 'Queue refreshed');
+    }
+  }, [showNotification, refreshQueue]);
 
   // Keyboard shortcuts
   useKeyboardQueue({
@@ -465,7 +495,7 @@ export default function QueuePage() {
         )
       );
     },
-    enabled: !USE_MOCK_DATA,
+    enabled: !shouldUseMockData,
   });
 
   // Reset focused index when filter changes
@@ -573,6 +603,25 @@ export default function QueuePage() {
         </div>
       )}
 
+      {/* Error Banner */}
+      {!shouldUseMockData && supabaseError && (
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p className="text-sm text-red-700 dark:text-red-400">
+              Error loading queue: {supabaseError}. Showing cached data.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {!shouldUseMockData && supabaseLoading && queueItems.length === 0 && (
+        <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Loading queue...</p>
+        </div>
+      )}
+
       {/* Queue List */}
       <div className="max-w-4xl mx-auto">
         <QueueListSimple
@@ -586,7 +635,7 @@ export default function QueuePage() {
           onReject={handleReject}
           onEdit={handleEdit}
           onItemClick={handleItemClick}
-          isLoading={isLoading}
+          isLoading={supabaseLoading}
         />
       </div>
 

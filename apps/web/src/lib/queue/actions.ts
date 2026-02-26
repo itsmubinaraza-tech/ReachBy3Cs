@@ -83,10 +83,11 @@ export async function approveResponse(
     }
 
     // Create audit log entry
-    const { error: auditError } = await supabase.from('audit_logs').insert({
+    const { error: auditError } = await supabase.from('audit_log').insert({
       organization_id: profile.organization_id,
       user_id: user.id,
-      action_type: 'response_approved',
+      action_type: 'response.approved',
+      action_category: 'engagement',
       entity_type: 'response',
       entity_id: id,
       action_data: { selectedType, notes },
@@ -164,10 +165,11 @@ export async function rejectResponse(
     }
 
     // Create audit log
-    const { error: auditError } = await supabase.from('audit_logs').insert({
+    const { error: auditError } = await supabase.from('audit_log').insert({
       organization_id: profile.organization_id,
       user_id: user.id,
-      action_type: 'response_rejected',
+      action_type: 'response.rejected',
+      action_category: 'engagement',
       entity_type: 'response',
       entity_id: id,
       action_data: { reason },
@@ -248,10 +250,11 @@ export async function editResponse(
     }
 
     // Create audit log
-    const { error: auditError } = await supabase.from('audit_logs').insert({
+    const { error: auditError } = await supabase.from('audit_log').insert({
       organization_id: profile.organization_id,
       user_id: user.id,
-      action_type: 'response_edited',
+      action_type: 'response.edited',
+      action_category: 'engagement',
       entity_type: 'response',
       entity_id: id,
       action_data: { newText },
@@ -334,7 +337,8 @@ export async function bulkApprove(
     const auditEntries = ids.map((id) => ({
       organization_id: profile.organization_id,
       user_id: user.id,
-      action_type: 'response_bulk_approved',
+      action_type: 'response.bulk_approved',
+      action_category: 'engagement',
       entity_type: 'response',
       entity_id: id,
       action_data: { bulk: true, totalInBatch: ids.length },
@@ -343,7 +347,7 @@ export async function bulkApprove(
       device_type: deviceType,
     }));
 
-    const { error: auditError } = await supabase.from('audit_logs').insert(auditEntries);
+    const { error: auditError } = await supabase.from('audit_log').insert(auditEntries);
 
     if (auditError) {
       console.error('Failed to create audit logs:', auditError);
@@ -415,7 +419,8 @@ export async function bulkReject(
     const auditEntries = ids.map((id) => ({
       organization_id: profile.organization_id,
       user_id: user.id,
-      action_type: 'response_bulk_rejected',
+      action_type: 'response.bulk_rejected',
+      action_category: 'engagement',
       entity_type: 'response',
       entity_id: id,
       action_data: { bulk: true, totalInBatch: ids.length, reason },
@@ -424,7 +429,7 @@ export async function bulkReject(
       device_type: deviceType,
     }));
 
-    const { error: auditError } = await supabase.from('audit_logs').insert(auditEntries);
+    const { error: auditError } = await supabase.from('audit_log').insert(auditEntries);
 
     if (auditError) {
       console.error('Failed to create audit logs:', auditError);
