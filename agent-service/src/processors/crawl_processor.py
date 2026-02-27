@@ -192,6 +192,16 @@ class CrawlProcessor:
         else:
             return "other"
 
+    def _get_platform_id(self, client: Client, platform_slug: str) -> str | None:
+        """Get platform ID from slug."""
+        try:
+            result = client.table("platforms").select("id").eq("slug", platform_slug).execute()
+            if result.data:
+                return result.data[0]["id"]
+        except Exception as e:
+            logger.warning(f"Could not find platform {platform_slug}: {e}")
+        return None
+
     async def _save_to_supabase(
         self,
         client: Client,
@@ -208,55 +218,61 @@ class CrawlProcessor:
         """
         now = datetime.now(timezone.utc).isoformat()
 
-        # 1. Save post
+        # Get platform_id from platforms table
+        platform_id = self._get_platform_id(client, platform)
+
+        # 1. Save post (matching actual schema)
         post_id = str(uuid.uuid4())
         post_data = {
             "id": post_id,
             "organization_id": organization_id,
-            "platform": platform,
+            "platform_id": platform_id,
             "external_id": post.external_id,
             "external_url": post.external_url,
-            "content": post.content[:10000] if post.content else "",  # Limit content length
+            "content": post.content[:10000] if post.content else "",
+            "content_type": "post",
             "author_handle": post.author_handle,
             "author_display_name": post.author_display_name,
-            "crawled_at": post.crawled_at.isoformat() if post.crawled_at else now,
-            "created_at": now,
-            "updated_at": now,
-            "metadata": {
+            "platform_metadata": {
                 "crawl_config": config_name,
                 "keywords_matched": post.keywords_matched,
-                "platform_metadata": post.platform_metadata,
+                "source_metadata": post.platform_metadata,
             },
+            "crawl_source": "search",
+            "crawl_query": config_name,
+            "external_created_at": post.crawled_at.isoformat() if post.crawled_at else None,
+            "detected_at": now,
         }
 
         client.table("posts").insert(post_data).execute()
 
-        # 2. Save signal
+        # 2. Save signal (matching actual schema)
         signal = pipeline_result.get("signal", {})
         signal_id = str(uuid.uuid4())
         signal_data = {
             "id": signal_id,
             "post_id": post_id,
-            "problem_category": signal.get("problem_category", "unknown"),
             "emotional_intensity": signal.get("emotional_intensity", 0.5),
             "keywords": signal.get("keywords", []),
-            "confidence": signal.get("confidence", 0.5),
-            "created_at": now,
+            "confidence_score": signal.get("confidence", 0.5),
+            "raw_analysis": {
+                "problem_category": signal.get("problem_category", "unknown"),
+            },
         }
 
         client.table("signals").insert(signal_data).execute()
 
-        # 3. Save risk score
+        # 3. Save risk score (matching actual schema - uses signal_id)
         risk = pipeline_result.get("risk", {})
         risk_id = str(uuid.uuid4())
         risk_data = {
             "id": risk_id,
-            "post_id": post_id,
+            "signal_id": signal_id,
             "risk_level": risk.get("risk_level", "medium"),
             "risk_score": risk.get("risk_score", 0.5),
-            "risk_factors": risk.get("risk_factors", []),
+            "risk_factors": risk.get("risk_factors", {}),
             "context_flags": risk.get("context_flags", []),
-            "created_at": now,
+            "recommended_action": risk.get("recommended_action", ""),
         }
 
         client.table("risk_scores").insert(risk_data).execute()
@@ -274,8 +290,6 @@ class CrawlProcessor:
             "soft_cta_variant": responses.get("soft_cta_response", ""),
             "contextual_variant": responses.get("contextual_response", ""),
             "status": "pending",
-            "created_at": now,
-            "updated_at": now,
         }
 
         client.table("responses").insert(response_data).execute()
@@ -293,8 +307,6 @@ class CrawlProcessor:
             "cts_score": cts.get("cts_score", 0.5),
             "requires_review": cts.get("requires_review", True),
             "decision_factors": cts.get("decision_factors", []),
-            "created_at": now,
-            "updated_at": now,
         }
 
         client.table("engagement_queue").insert(queue_data).execute()
