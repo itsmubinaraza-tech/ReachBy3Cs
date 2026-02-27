@@ -11,7 +11,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import health, pipeline, skills, clustering, posting
+from src.api.routes import health, pipeline, skills, clustering, posting, crawlers
 from src.config import get_settings
 
 # Configure logging
@@ -63,19 +63,27 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.app_name,
-        description="AI Skills Agent Service for Needs-Matched Platform",
+        description="AI Skills Agent Service for ReachBy3Cs Platform",
         version="0.1.0",
         debug=settings.debug,
         lifespan=lifespan,
-        docs_url="/docs" if settings.is_development else None,
-        redoc_url="/redoc" if settings.is_development else None,
-        openapi_url="/openapi.json" if settings.is_development else None,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
     )
 
-    # Configure CORS
+    # Configure CORS - allow web app origins
+    allowed_origins = [
+        "http://localhost:3000",
+        "https://reachby3cs.vercel.app",
+        "https://*.vercel.app",
+    ]
+    if settings.is_development:
+        allowed_origins.append("*")
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.is_development else [],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -87,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(pipeline.router)
     app.include_router(clustering.router)
     app.include_router(posting.router)
+    app.include_router(crawlers.router)
 
     return app
 

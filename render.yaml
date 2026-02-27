@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: reachby3cs-agent
+    runtime: docker
+    dockerfilePath: ./agent-service/Dockerfile
+    dockerContext: ./agent-service
+    region: oregon
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SERP_API_KEY
+        sync: false
+      # Optional: Direct platform API keys (Phase 2)
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: TWITTER_BEARER_TOKEN
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
