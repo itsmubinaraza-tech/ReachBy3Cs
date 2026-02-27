@@ -277,36 +277,35 @@ class CrawlProcessor:
 
         client.table("risk_scores").insert(risk_data).execute()
 
-        # 4. Save response
+        # 4. Save response (uses signal_id, not post_id)
         responses = pipeline_result.get("responses", {})
+        cts = pipeline_result.get("cts", {})
+        cta = pipeline_result.get("cta", {})
         response_id = str(uuid.uuid4())
         response_data = {
             "id": response_id,
-            "post_id": post_id,
-            "organization_id": organization_id,
-            "response_type": responses.get("selected_type", "soft_cta"),
-            "content": responses.get("selected_response", ""),
-            "value_first_variant": responses.get("value_first_response", ""),
-            "soft_cta_variant": responses.get("soft_cta_response", ""),
-            "contextual_variant": responses.get("contextual_response", ""),
+            "signal_id": signal_id,
+            "selected_response": responses.get("selected_response", ""),
+            "selected_type": responses.get("selected_type", "soft_cta"),
+            "value_first_response": responses.get("value_first_response", ""),
+            "soft_cta_response": responses.get("soft_cta_response", ""),
+            "contextual_response": responses.get("contextual_response", ""),
+            "cta_level": cta.get("cta_level", 0),
+            "cts_score": cts.get("cts_score", 0.5),
+            "can_auto_post": cts.get("can_auto_post", False),
             "status": "pending",
         }
 
         client.table("responses").insert(response_data).execute()
 
         # 5. Add to engagement queue
-        cts = pipeline_result.get("cts", {})
         queue_id = str(uuid.uuid4())
         queue_data = {
             "id": queue_id,
-            "organization_id": organization_id,
-            "post_id": post_id,
             "response_id": response_id,
-            "status": "pending",
+            "organization_id": organization_id,
             "priority": self._calculate_priority(cts.get("cts_score", 0.5)),
-            "cts_score": cts.get("cts_score", 0.5),
-            "requires_review": cts.get("requires_review", True),
-            "decision_factors": cts.get("decision_factors", []),
+            "status": "queued",
         }
 
         client.table("engagement_queue").insert(queue_data).execute()
