@@ -400,10 +400,12 @@ async def process_and_save(request: ProcessAndSaveRequest) -> dict[str, Any]:
             return {"status": "blocked", "reason": "Content flagged as high risk"}
 
         # Create a mock CrawledPost for the processor
+        from src.crawlers.base import ContentType
         post = CrawledPost(
             external_id=f"manual_{uuid.uuid4().hex[:12]}",
             external_url=request.url,
             content=request.text,
+            content_type=ContentType.POST,
             platform=request.platform,
             crawled_at=datetime.now(timezone.utc),
             keywords_matched=[],
