@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import health, pipeline, skills, clustering, posting, crawlers
 from src.config import get_settings
+from src.crawlers.scheduler import get_scheduler
+from src.processors.crawl_processor import get_crawl_processor
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +22,16 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+async def process_crawl_callback(config_name: str, result) -> None:
+    """Callback to process crawl results through pipeline and save to Supabase."""
+    try:
+        processor = get_crawl_processor()
+        stats = await processor.process_crawl_results(config_name, result)
+        logger.info(f"Crawl callback processed: {stats}")
+    except Exception as e:
+        logger.error(f"Error in crawl callback: {e}")
 
 
 @asynccontextmanager
@@ -42,14 +54,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.app_env.value,
     )
 
-    # Initialize services here (e.g., database connections, cache)
+    # Connect crawl processor to scheduler
+    scheduler = get_scheduler()
+    scheduler.set_result_callback(process_crawl_callback)
+    logger.info("Crawl processor connected to scheduler")
+
     logger.info("Application startup complete")
 
     yield
 
     # Shutdown
     logger.info("Shutting down application...")
-    # Cleanup resources here
+    # Stop scheduler if running
+    scheduler = get_scheduler()
+    if scheduler._running:
+        scheduler.stop()
     logger.info("Application shutdown complete")
 
 
