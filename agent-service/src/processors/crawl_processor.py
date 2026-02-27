@@ -140,11 +140,11 @@ class CrawlProcessor:
                 platform = self._detect_platform(post.external_url)
 
                 # Run through AI pipeline
-                pipeline_result = await pipeline.aprocess({
-                    "text": post.content,
-                    "platform": platform,
-                    "tenant_context": tenant_context,
-                })
+                pipeline_result = await pipeline.run_async(
+                    text=post.content,
+                    platform=platform,
+                    tenant_context=tenant_context,
+                )
 
                 # Check if blocked
                 if pipeline_result.get("blocked"):

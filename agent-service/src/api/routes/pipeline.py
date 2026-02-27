@@ -340,6 +340,101 @@ async def analyze_post(request: PipelineAnalyzeRequest) -> PipelineAnalyzeRespon
         ) from e
 
 
+class ProcessAndSaveRequest(BaseModel):
+    """Request to process a post and save to Supabase."""
+
+    url: str = Field(description="URL of the original post")
+    text: str = Field(description="Post content", min_length=1, max_length=10000)
+    platform: Literal["reddit", "twitter", "quora", "other"] = Field(description="Platform")
+    organization_id: str = Field(
+        default="aaaa1111-1111-1111-1111-111111111111",
+        description="Organization UUID"
+    )
+
+
+@router.post(
+    "/process-and-save",
+    status_code=status.HTTP_201_CREATED,
+    summary="Process Post and Save to Queue",
+    description="Run pipeline on a post and save results to Supabase queue for review.",
+)
+async def process_and_save(request: ProcessAndSaveRequest) -> dict[str, Any]:
+    """Process a post through the pipeline and save to Supabase.
+
+    This endpoint:
+    1. Runs the post through the AI pipeline
+    2. Saves post, signal, risk, response to Supabase
+    3. Adds to engagement queue for human review
+
+    Returns:
+        dict: Processing result with queue_id.
+    """
+    from src.processors.crawl_processor import get_crawl_processor
+    from src.crawlers.base import CrawledPost
+    from datetime import datetime, timezone
+    import uuid
+
+    logger.info(f"Processing and saving post: {request.url}")
+
+    try:
+        processor = get_crawl_processor()
+        pipeline = get_pipeline()
+
+        # Default tenant context for WeAttuned
+        tenant_context = {
+            "app_name": "WeAttuned",
+            "value_prop": "Emotional intelligence app that helps couples communicate better",
+            "target_audience": "Couples seeking better communication",
+            "key_benefits": ["Better communication", "Emotional awareness", "Conflict resolution"],
+            "website_url": "https://weattuned.com"
+        }
+
+        # Run through pipeline
+        result = await pipeline.run_async(
+            text=request.text,
+            platform=request.platform,
+            tenant_context=tenant_context,
+        )
+
+        if result.get("blocked"):
+            return {"status": "blocked", "reason": "Content flagged as high risk"}
+
+        # Create a mock CrawledPost for the processor
+        post = CrawledPost(
+            external_id=f"manual_{uuid.uuid4().hex[:12]}",
+            external_url=request.url,
+            content=request.text,
+            platform=request.platform,
+            crawled_at=datetime.now(timezone.utc),
+            keywords_matched=[],
+        )
+
+        # Save to Supabase
+        queue_id = await processor._save_to_supabase(
+            client=processor._get_client(),
+            post=post,
+            platform=request.platform,
+            pipeline_result=result,
+            organization_id=request.organization_id,
+            config_name="manual_submission",
+        )
+
+        return {
+            "status": "success",
+            "queue_id": queue_id,
+            "message": "Post processed and added to queue for review",
+            "cts_score": result.get("cts", {}).get("cts_score", 0),
+            "requires_review": result.get("cts", {}).get("requires_review", True),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to process and save: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Processing failed: {str(e)}",
+        ) from e
+
+
 @router.get(
     "/health",
     status_code=status.HTTP_200_OK,
