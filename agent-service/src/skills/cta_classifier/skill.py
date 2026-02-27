@@ -219,11 +219,10 @@ class CTAClassifierSkill:
         matches = []
         for pattern in patterns:
             found = re.findall(pattern, text, re.IGNORECASE)
-            matches.extend(found if isinstance(found[0], str) if found else [])
-            if re.search(pattern, text, re.IGNORECASE):
-                match = re.search(pattern, text, re.IGNORECASE)
-                if match and match.group() not in matches:
-                    matches.append(match.group())
+            if found:
+                for item in found:
+                    if isinstance(item, str) and item not in matches:
+                        matches.append(item)
         return matches
 
     def _has_product_mentions(self, text: str) -> bool:
