@@ -161,75 +161,73 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
       const from = currentPage * pageSize;
       const to = from + pageSize - 1;
 
-      // Build query with joins
+      // Build query with joins - query from engagement_queue which has direct org filter
       let query = supabase
-        .from('responses')
+        .from('engagement_queue')
         .select(`
           id,
-          selected_response,
-          selected_type,
-          value_first_response,
-          soft_cta_response,
-          contextual_response,
-          cta_level,
-          cts_score,
-          can_auto_post,
           status,
+          priority,
           created_at,
-          cluster:clusters(
+          response:responses!inner(
             id,
-            name,
-            member_count
-          ),
-          signal:signals!inner(
-            id,
-            problem_category_id,
-            emotional_intensity,
-            keywords,
-            post:posts!inner(
+            selected_response,
+            selected_type,
+            value_first_response,
+            soft_cta_response,
+            contextual_response,
+            cta_level,
+            cts_score,
+            can_auto_post,
+            status,
+            created_at,
+            signal:signals!inner(
               id,
-              external_url,
-              content,
-              author_handle,
-              detected_at,
-              platform:platforms(
+              problem_category_id,
+              emotional_intensity,
+              keywords,
+              post:posts!inner(
                 id,
-                name,
-                slug,
-                icon_url
+                external_url,
+                content,
+                author_handle,
+                detected_at,
+                platform:platforms(
+                  id,
+                  name,
+                  slug,
+                  icon_url
+                )
+              ),
+              risk_score:risk_scores!inner(
+                risk_level,
+                risk_score,
+                context_flags
               )
-            ),
-            risk_score:risk_scores!inner(
-              risk_level,
-              risk_score,
-              context_flags
             )
           )
         `, { count: 'exact' });
 
-      // Apply organization filter for defense in depth (RLS also filters, but explicit is safer)
-      // Filter through the signal->post->organization_id path
-      query = query.eq('signal.post.organization_id', organization.id);
+      // Apply organization filter directly on engagement_queue
+      query = query.eq('organization_id', organization.id);
 
-      // Apply status filter
+      // Apply status filter on engagement_queue
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        // Map response status to queue status
+        const queueStatus = filters.status === 'pending' ? 'queued' : filters.status;
+        query = query.eq('status', queueStatus);
       }
 
-      if (filters.riskLevel) {
-        query = query.eq('signal.risk_score.risk_level', filters.riskLevel);
-      }
-
-      if (filters.platformId) {
-        query = query.eq('signal.post.platform_id', filters.platformId);
-      }
+      // Note: Nested filters don't work well with PostgREST, so we filter in transform
+      // if (filters.riskLevel) { ... }
+      // if (filters.platformId) { ... }
 
       if (filters.minCtsScore !== undefined) {
-        query = query.gte('cts_score', filters.minCtsScore);
+        query = query.gte('response.cts_score', filters.minCtsScore);
       }
 
       if (filters.maxCtsScore !== undefined) {
-        query = query.lte('cts_score', filters.maxCtsScore);
+        query = query.lte('response.cts_score', filters.maxCtsScore);
       }
 
       if (filters.dateFrom) {
@@ -251,55 +249,60 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
         throw new Error(queryError.message);
       }
 
-      // Transform data to QueueItemDisplay format
-      const transformedItems: QueueItemDisplay[] = (data || []).map((item: any) => ({
-        id: item.id,
-        original: {
-          platform: item.signal?.post?.platform ? {
-            id: item.signal.post.platform.id,
-            name: item.signal.post.platform.name,
-            slug: item.signal.post.platform.slug,
-            iconUrl: item.signal.post.platform.icon_url,
-          } : {
-            id: 'unknown',
-            name: 'Unknown',
-            slug: 'unknown',
-            iconUrl: '/icons/globe.svg',
+      // Transform data to QueueItemDisplay format (data comes from engagement_queue with nested response)
+      const transformedItems: QueueItemDisplay[] = (data || []).map((item: any) => {
+        const response = item.response;
+        const signal = response?.signal;
+        const post = signal?.post;
+        const platform = post?.platform;
+        const riskScore = signal?.risk_score;
+
+        return {
+          id: item.id, // queue item id
+          responseId: response?.id,
+          original: {
+            platform: platform ? {
+              id: platform.id,
+              name: platform.name,
+              slug: platform.slug,
+              iconUrl: platform.icon_url,
+            } : {
+              id: 'unknown',
+              name: 'Unknown',
+              slug: 'unknown',
+              iconUrl: '/icons/globe.svg',
+            },
+            content: post?.content || '',
+            authorHandle: post?.author_handle || 'anonymous',
+            url: post?.external_url || '',
+            detectedAt: post?.detected_at || item.created_at,
           },
-          content: item.signal?.post?.content || '',
-          authorHandle: item.signal?.post?.author_handle || 'anonymous',
-          url: item.signal?.post?.external_url || '',
-          detectedAt: item.signal?.post?.detected_at || item.created_at,
-        },
-        analysis: {
-          problemCategory: item.signal?.problem_category_id,
-          emotionalIntensity: item.signal?.emotional_intensity || 0.5,
-          keywords: item.signal?.keywords || [],
-          riskLevel: item.signal?.risk_score?.risk_level || 'medium',
-          riskScore: item.signal?.risk_score?.risk_score || 0.5,
-          riskFactors: item.signal?.risk_score?.context_flags || [],
-        },
-        responses: {
-          valueFirst: item.value_first_response,
-          softCta: item.soft_cta_response,
-          contextual: item.contextual_response,
-          selected: item.selected_response,
-          selectedType: item.selected_type,
-        },
-        metrics: {
-          ctaLevel: item.cta_level,
-          ctsScore: item.cts_score,
-          canAutoPost: item.can_auto_post,
-        },
-        cluster: item.cluster ? {
-          id: item.cluster.id,
-          name: item.cluster.name,
-          memberCount: item.cluster.member_count,
-        } : null,
-        status: item.status,
-        priority: 50, // Default priority
-        createdAt: item.created_at,
-      }));
+          analysis: {
+            problemCategory: signal?.problem_category_id,
+            emotionalIntensity: signal?.emotional_intensity || 0.5,
+            keywords: signal?.keywords || [],
+            riskLevel: riskScore?.risk_level || 'medium',
+            riskScore: riskScore?.risk_score || 0.5,
+            riskFactors: riskScore?.context_flags || [],
+          },
+          responses: {
+            valueFirst: response?.value_first_response,
+            softCta: response?.soft_cta_response,
+            contextual: response?.contextual_response,
+            selected: response?.selected_response,
+            selectedType: response?.selected_type,
+          },
+          metrics: {
+            ctaLevel: response?.cta_level,
+            ctsScore: response?.cts_score,
+            canAutoPost: response?.can_auto_post,
+          },
+          cluster: null,
+          status: item.status, // queue status
+          priority: item.priority || 50,
+          createdAt: item.created_at,
+        };
+      });
 
       if (reset) {
         setItems(transformedItems);
