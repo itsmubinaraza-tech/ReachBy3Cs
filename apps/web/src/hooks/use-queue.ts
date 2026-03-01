@@ -162,6 +162,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
       const to = from + pageSize - 1;
 
       // Build query with joins - query from engagement_queue which has direct org filter
+      // Using left joins (no !inner) to avoid filtering out rows with missing nested data
       let query = supabase
         .from('engagement_queue')
         .select(`
@@ -169,7 +170,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
           status,
           priority,
           created_at,
-          response:responses!inner(
+          response:responses(
             id,
             selected_response,
             selected_type,
@@ -181,12 +182,12 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
             can_auto_post,
             status,
             created_at,
-            signal:signals!inner(
+            signal:signals(
               id,
               problem_category_id,
               emotional_intensity,
               keywords,
-              post:posts!inner(
+              post:posts(
                 id,
                 external_url,
                 content,
@@ -199,7 +200,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
                   icon_url
                 )
               ),
-              risk_score:risk_scores!inner(
+              risk_score:risk_scores(
                 risk_level,
                 risk_score,
                 context_flags
@@ -218,17 +219,8 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
         query = query.eq('status', queueStatus);
       }
 
-      // Note: Nested filters don't work well with PostgREST, so we filter in transform
-      // if (filters.riskLevel) { ... }
-      // if (filters.platformId) { ... }
-
-      if (filters.minCtsScore !== undefined) {
-        query = query.gte('response.cts_score', filters.minCtsScore);
-      }
-
-      if (filters.maxCtsScore !== undefined) {
-        query = query.lte('response.cts_score', filters.maxCtsScore);
-      }
+      // Note: Nested filters don't work well with PostgREST
+      // CTS score, risk level, and platform filters are applied in JavaScript after fetch
 
       if (filters.dateFrom) {
         query = query.gte('created_at', filters.dateFrom);
