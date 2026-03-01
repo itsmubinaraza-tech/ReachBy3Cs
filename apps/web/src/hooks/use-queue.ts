@@ -43,7 +43,8 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
   const pathname = usePathname();
   const { user } = useAuth();
   const { organization } = useOrg();
-  const supabase = createClient();
+  // Memoize supabase client to prevent re-renders from creating new instances
+  const supabase = useMemo(() => createClient(), []);
 
   const [items, setItems] = useState<QueueItemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -273,7 +274,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
             canAutoPost: response?.can_auto_post || false,
           },
           cluster: null,
-          status: item.status,
+          status: item.status === 'queued' ? 'pending' : item.status as any,
           priority: item.priority || 50,
           createdAt: item.created_at,
         };

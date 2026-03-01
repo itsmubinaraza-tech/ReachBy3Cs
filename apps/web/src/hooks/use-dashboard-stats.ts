@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
 import { useOrg } from '@/contexts/org-context';
@@ -34,7 +34,8 @@ export function useDashboardStats(): UseDashboardStatsResult {
   const [stats, setStats] = useState<QuickStat[]>(mockQuickStats);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  // Memoize supabase client to prevent re-renders from creating new instances
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchStats = useCallback(async () => {
     // Use mock data if not authenticated or in demo mode

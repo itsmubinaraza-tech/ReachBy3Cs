@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -35,7 +35,8 @@ export function useRealtimeQueue(options: UseRealtimeQueueOptions = {}) {
   } = options;
 
   const { user } = useAuth();
-  const supabase = createClient();
+  // Memoize supabase client to prevent infinite reconnection loops
+  const supabase = useMemo(() => createClient(), []);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Handle incoming changes
@@ -126,7 +127,8 @@ export function useRealtimeAuditLog(options: {
 } = {}) {
   const { onNewEntry, enabled = true } = options;
   const { user } = useAuth();
-  const supabase = createClient();
+  // Memoize supabase client to prevent infinite reconnection loops
+  const supabase = useMemo(() => createClient(), []);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
