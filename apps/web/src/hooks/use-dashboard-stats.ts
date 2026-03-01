@@ -48,6 +48,53 @@ export function useDashboardStats(): UseDashboardStatsResult {
       setIsLoading(true);
       setError(null);
 
+      // Simple single query - just get pending count
+      const { count: pendingCount, error: pendingError } = await supabase
+        .from('engagement_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organization.id)
+        .eq('status', 'queued');
+
+      if (pendingError) {
+        console.error('Error fetching pending count:', pendingError);
+        setStats(mockQuickStats);
+        setIsLoading(false);
+        return;
+      }
+
+      // Return simple stats with just pending count
+      const simpleStats: QuickStat[] = [
+        {
+          id: 'stat-1',
+          title: 'Pending Reviews',
+          value: String(pendingCount ?? 0),
+          description: 'Responses awaiting approval',
+        },
+        {
+          id: 'stat-2',
+          title: 'Approved Today',
+          value: '0',
+          description: 'Manually approved',
+        },
+        {
+          id: 'stat-3',
+          title: 'Auto-posted',
+          value: '0',
+          description: 'Posted automatically',
+        },
+        {
+          id: 'stat-4',
+          title: 'Success Rate',
+          value: '0%',
+          description: 'Approval rate',
+        },
+      ];
+
+      setStats(simpleStats);
+      setIsLoading(false);
+      return;
+
+      // TEMPORARILY DISABLED - complex queries below
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
@@ -57,13 +104,13 @@ export function useDashboardStats(): UseDashboardStatsResult {
       const yesterdayISO = yesterday.toISOString();
 
       // Fetch pending reviews count from engagement_queue (filtered by org)
-      const { count: pendingCount, error: pendingError } = await supabase
+      const { count: pendingCount2, error: pendingError2 } = await supabase
         .from('engagement_queue')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', organization.id)
         .eq('status', 'queued');
 
-      if (pendingError) throw pendingError;
+      if (pendingError2) throw pendingError2;
 
       // Fetch approved today count
       const { count: approvedTodayCount, error: approvedError } = await supabase
