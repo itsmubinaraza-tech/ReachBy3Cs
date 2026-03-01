@@ -237,24 +237,29 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
       const transformedItems: QueueItemDisplay[] = (data || []).map((item: any) => ({
         id: item.id,
         original: {
-          platform: {
+          platform: item.signal?.post?.platform ? {
             id: item.signal.post.platform.id,
             name: item.signal.post.platform.name,
             slug: item.signal.post.platform.slug,
             iconUrl: item.signal.post.platform.icon_url,
+          } : {
+            id: 'unknown',
+            name: 'Unknown',
+            slug: 'unknown',
+            iconUrl: '/icons/globe.svg',
           },
-          content: item.signal.post.content,
-          authorHandle: item.signal.post.author_handle,
-          url: item.signal.post.external_url,
-          detectedAt: item.signal.post.detected_at,
+          content: item.signal?.post?.content || '',
+          authorHandle: item.signal?.post?.author_handle || 'anonymous',
+          url: item.signal?.post?.external_url || '',
+          detectedAt: item.signal?.post?.detected_at || item.created_at,
         },
         analysis: {
-          problemCategory: item.signal.problem_category_id,
-          emotionalIntensity: item.signal.emotional_intensity,
-          keywords: item.signal.keywords || [],
-          riskLevel: item.signal.risk_score.risk_level,
-          riskScore: item.signal.risk_score.risk_score,
-          riskFactors: item.signal.risk_score.context_flags || [],
+          problemCategory: item.signal?.problem_category_id,
+          emotionalIntensity: item.signal?.emotional_intensity || 0.5,
+          keywords: item.signal?.keywords || [],
+          riskLevel: item.signal?.risk_score?.risk_level || 'medium',
+          riskScore: item.signal?.risk_score?.risk_score || 0.5,
+          riskFactors: item.signal?.risk_score?.context_flags || [],
         },
         responses: {
           valueFirst: item.value_first_response,
