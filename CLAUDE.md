@@ -339,16 +339,46 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 - `agent-service/src/api/routes/health.py` - Health check endpoints
 - `agent-service/Dockerfile` - Container configuration
 
+## Agent Service Architecture
+
+The Python agent service (`agent-service/`) uses LangGraph for AI skills:
+
+### When Skills are Triggered
+
+1. **Crawl API called** (`/api/crawl`) → Signal Detection → Risk Scoring
+2. **Process API called** (`/api/process`) → Response Generation → CTA/CTS Decision
+3. **Queue approval** → Updates response status, triggers posting flow
+
+### Skill Execution Order
+
+```
+SerpAPI finds posts → Signal Detection → Risk Scoring → Response Generation → CTA Classifier → CTS Decision → Queue for review
+```
+
+### Key Skills
+
+| Skill | Purpose | Input | Output |
+|-------|---------|-------|--------|
+| Signal Detection | Identifies high-intent conversations | Post content | Signal with keywords, emotional intensity |
+| Risk Scoring | Assesses response risk level | Signal data | Risk level (low/medium/high/blocked) |
+| Response Generation | Creates contextual responses | Signal + Risk | 3 response variants |
+| CTA Classifier | Determines CTA level (0-3) | Response content | CTA level score |
+| CTS Decision | Calculates Can-To-Send score | All analysis | CTS score, auto-post eligibility |
+
 ## Deployment
 
 ### Vercel (Web App)
 1. Push code to GitHub
 2. Import repository in Vercel
-3. Set Root Directory to `apps/web`
+3. Set Root Directory to `apps/web` (uses root vercel.json for config)
 4. Add environment variables
 5. Deploy
 
 ### Supabase (Database)
-- Project URL: https://ocdtplwgyxemjqlkvegp.supabase.co
+- Project URL: https://lwubdaoaqoutcutqhnim.supabase.co
 - Migrations pushed with `npx supabase db push --linked`
 - Seed data loaded with `npx supabase db reset --linked`
+
+### Database Triggers
+- `handle_new_user()` - Auto-creates user profile when user signs up via Supabase Auth
+- Ensures RLS policies work correctly for new users

@@ -12,11 +12,14 @@ const nextConfig = {
     ],
   },
   eslint: {
-    // Skip ESLint during builds (we'll run it separately)
+    // TODO: Set to false once all lint errors are fixed
+    // Currently skipped to allow deployment while fixing incrementally
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Allow builds with type errors for now (we'll fix them incrementally)
+    // TODO: Set to false once all type errors are fixed
+    // Currently skipped to allow deployment while fixing incrementally
+    // Known issues: React type mismatches with @types/react version
     ignoreBuildErrors: true,
   },
   // Disable static generation for error pages to avoid styled-jsx issues

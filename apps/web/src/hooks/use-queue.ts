@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
+import { useOrg } from '@/contexts/org-context';
 import type { QueueItemDisplay, RiskLevel, ResponseStatus, QueueFilters } from 'shared-types';
 
 const PAGE_SIZE = 20;
@@ -41,6 +42,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { organization } = useOrg();
   const supabase = createClient();
 
   const [items, setItems] = useState<QueueItemDisplay[]>([]);
@@ -90,24 +92,30 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
 
   // Fetch queue counts for tabs
   const fetchCounts = useCallback(async () => {
-    if (!user) return;
+    if (!user || !organization) return;
 
     try {
       // Get all pending items to calculate counts
+      // Note: RLS already filters by organization, but we add explicit filter for defense in depth
       const { data, error: countError } = await supabase
-        .from('responses')
+        .from('engagement_queue')
         .select(`
           id,
-          cts_score,
-          can_auto_post,
-          signal:signals!inner(
+          organization_id,
+          response:responses!inner(
             id,
-            risk_score:risk_scores!inner(
-              risk_level
+            cts_score,
+            can_auto_post,
+            signal:signals!inner(
+              id,
+              risk_score:risk_scores!inner(
+                risk_level
+              )
             )
           )
         `)
-        .eq('status', 'pending');
+        .eq('organization_id', organization.id)
+        .eq('status', 'queued');
 
       if (countError) {
         console.error('Error fetching counts:', countError);
@@ -117,24 +125,30 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
       const pending = data || [];
       setCounts({
         all: pending.length,
-        lowRisk: pending.filter((item: any) =>
-          item.signal?.risk_score?.risk_level === 'low'
+        lowRisk: pending.filter((item: Record<string, unknown>) =>
+          (item.response as Record<string, unknown>)?.signal &&
+          ((item.response as Record<string, unknown>).signal as Record<string, unknown>)?.risk_score &&
+          (((item.response as Record<string, unknown>).signal as Record<string, unknown>).risk_score as Record<string, unknown>)?.risk_level === 'low'
         ).length,
-        highCts: pending.filter((item: any) => item.cts_score >= 0.8).length,
-        needsReview: pending.filter((item: any) =>
-          !item.can_auto_post ||
-          item.signal?.risk_score?.risk_level === 'high' ||
-          item.signal?.risk_score?.risk_level === 'blocked'
+        highCts: pending.filter((item: Record<string, unknown>) =>
+          ((item.response as Record<string, unknown>)?.cts_score as number) >= 0.8
         ).length,
+        needsReview: pending.filter((item: Record<string, unknown>) => {
+          const response = item.response as Record<string, unknown>;
+          const signal = response?.signal as Record<string, unknown>;
+          const riskScore = signal?.risk_score as Record<string, unknown>;
+          const riskLevel = riskScore?.risk_level as string;
+          return !response?.can_auto_post || riskLevel === 'high' || riskLevel === 'blocked';
+        }).length,
       });
     } catch (err) {
       console.error('Error in fetchCounts:', err);
     }
-  }, [user, supabase]);
+  }, [user, organization, supabase]);
 
   // Build and execute the main query
   const fetchItems = useCallback(async (reset = false) => {
-    if (!user) {
+    if (!user || !organization) {
       setIsLoading(false);
       return;
     }
@@ -193,7 +207,11 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
           )
         `, { count: 'exact' });
 
-      // Apply filters
+      // Apply organization filter for defense in depth (RLS also filters, but explicit is safer)
+      // Filter through the signal->post->organization_id path
+      query = query.eq('signal.post.organization_id', organization.id);
+
+      // Apply status filter
       if (filters.status) {
         query = query.eq('status', filters.status);
       }
@@ -298,7 +316,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
     } finally {
       setIsLoading(false);
     }
-  }, [user, supabase, filters, page, pageSize]);
+  }, [user, organization, supabase, filters, page, pageSize]);
 
   // Load more items
   const loadMore = useCallback(async () => {
@@ -315,11 +333,11 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
     ]);
   }, [fetchItems, fetchCounts]);
 
-  // Initial fetch and refetch on filter change
+  // Initial fetch and refetch on filter change or organization change
   useEffect(() => {
     fetchItems(true);
     fetchCounts();
-  }, [filters.status, filters.riskLevel, filters.platformId, filters.minCtsScore, filters.maxCtsScore, filters.dateFrom, filters.dateTo, user]);
+  }, [filters.status, filters.riskLevel, filters.platformId, filters.minCtsScore, filters.maxCtsScore, filters.dateFrom, filters.dateTo, user, organization]);
 
   // Fetch more when page changes
   useEffect(() => {

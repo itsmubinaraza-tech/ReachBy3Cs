@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import type { Response, RiskLevel } from 'shared-types';
+import type { RiskLevel } from 'shared-types';
 import { supabase } from '../lib/supabase';
-import { AppStorage, type QueueCacheItem, type PendingAction } from '../lib/storage';
+import { AppStorage, type QueueCacheItem } from '../lib/storage';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -99,22 +99,33 @@ export function useQueue(options: UseQueueOptions = {}) {
       }
 
       // Transform data to QueueItem format
-      const queueItems: QueueItem[] = (data ?? []).map((response: any) => ({
-        id: response.id,
-        platform: response.signals?.posts?.platforms?.slug ?? 'unknown',
-        platformName: response.signals?.posts?.platforms?.name ?? 'Unknown',
-        originalText: response.signals?.posts?.content ?? '',
-        responsePreview: response.selected_response?.substring(0, 100) + '...',
-        selectedResponse: response.selected_response,
-        riskLevel: response.signals?.risk_scores?.[0]?.risk_level ?? 'low',
-        ctaLevel: response.cta_level ?? 0,
-        ctsScore: response.cts_score ?? 0,
-        canAutoPost: response.can_auto_post ?? false,
-        createdAt: response.created_at,
-        externalUrl: response.signals?.posts?.external_url,
-        clusterId: response.clusters?.id,
-        clusterName: response.clusters?.name,
-      }));
+      // Supabase returns complex nested data with arrays for relations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const queueItems: QueueItem[] = (data ?? []).map((response: Record<string, unknown>) => {
+        // Extract nested data safely - Supabase returns single objects for singular relations
+        const signals = response.signals as Record<string, unknown> | undefined;
+        const posts = signals?.posts as Record<string, unknown> | undefined;
+        const platforms = posts?.platforms as Record<string, unknown> | undefined;
+        const riskScores = signals?.risk_scores as Array<Record<string, unknown>> | undefined;
+        const clusters = response.clusters as Record<string, unknown> | undefined;
+
+        return {
+          id: response.id as string,
+          platform: (platforms?.slug as string) ?? 'unknown',
+          platformName: (platforms?.name as string) ?? 'Unknown',
+          originalText: (posts?.content as string) ?? '',
+          responsePreview: ((response.selected_response as string) ?? '').substring(0, 100) + '...',
+          selectedResponse: (response.selected_response as string) ?? '',
+          riskLevel: (riskScores?.[0]?.risk_level as RiskLevel) ?? 'low',
+          ctaLevel: (response.cta_level as number) ?? 0,
+          ctsScore: (response.cts_score as number) ?? 0,
+          canAutoPost: (response.can_auto_post as boolean) ?? false,
+          createdAt: response.created_at as string,
+          externalUrl: posts?.external_url as string | undefined,
+          clusterId: clusters?.id as string | undefined,
+          clusterName: clusters?.name as string | undefined,
+        };
+      });
 
       // Sort items
       if (sortBy === 'cts') {

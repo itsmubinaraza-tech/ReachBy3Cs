@@ -198,17 +198,24 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
       return { error: new Error('Failed to create organization') };
     }
 
-    // Create user profile
-    const { error: profileError } = await supabase.from('users').insert({
-      id: authData.user.id,
-      organization_id: orgData.id,
-      email,
-      full_name: fullName,
-      role: 'owner',
-      notification_preferences: { push: true, email: true },
-    });
+    // Create or update user profile (upsert handles trigger-created records)
+    const { error: profileError } = await supabase.from('users').upsert(
+      {
+        id: authData.user.id,
+        organization_id: orgData.id,
+        email,
+        full_name: fullName,
+        role: 'owner',
+        notification_preferences: { push: true, email: true },
+      },
+      {
+        onConflict: 'id',
+        ignoreDuplicates: false,
+      }
+    );
 
     if (profileError) {
+      console.error('Profile upsert error:', profileError);
       return { error: new Error('Failed to create user profile') };
     }
 

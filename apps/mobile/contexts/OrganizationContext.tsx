@@ -60,9 +60,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       if (savedOrg) {
         setOrganization(savedOrg);
       } else if (orgs.length > 0) {
-        // Default to first org
-        setOrganization(orgs[0]);
-        AppStorage.setSelectedOrgId(orgs[0].id);
+        // Default to first org - safely access with explicit check
+        const firstOrg = orgs[0];
+        if (firstOrg) {
+          setOrganization(firstOrg);
+          AppStorage.setSelectedOrgId(firstOrg.id);
+        }
       }
     } catch (error) {
       console.error('Error in fetchOrganizations:', error);

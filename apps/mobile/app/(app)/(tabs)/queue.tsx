@@ -135,7 +135,7 @@ function QueueItemCard({
             <View className="mb-2 flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <Ionicons
-                  name={getPlatformIcon(item.platform) as any}
+                  name={getPlatformIcon(item.platform) as keyof typeof Ionicons.glyphMap}
                   size={18}
                   color="#3b82f6"
                 />

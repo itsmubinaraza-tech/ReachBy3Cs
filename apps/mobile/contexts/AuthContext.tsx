@@ -6,7 +6,6 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { Alert } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import type { Session, User, AuthError } from '@supabase/supabase-js';
 import type { User as DbUser, UserRole } from 'shared-types';
@@ -156,16 +155,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     }
 
-    // Create user profile in database
+    // Create or update user profile in database (upsert handles trigger-created records)
     if (data.user) {
       const { error: profileError } = await supabase
         .from('users')
-        .insert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          role: 'member',
-        });
+        .upsert(
+          {
+            id: data.user.id,
+            email,
+            full_name: fullName,
+            role: 'member',
+          },
+          {
+            onConflict: 'id',
+            ignoreDuplicates: false,
+          }
+        );
 
       if (profileError) {
         console.error('Error creating user profile:', profileError);

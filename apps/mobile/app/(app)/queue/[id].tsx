@@ -104,6 +104,7 @@ function formatDate(dateString: string): string {
 
 function ResponseVariantCard({
   title,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type,
   content,
   isSelected,
@@ -233,45 +234,59 @@ export default function QueueDetailScreen() {
         throw new Error('Response not found');
       }
 
-      const responseData = data as any;
+      // Extract nested data safely - Supabase returns single objects for singular relations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = data as Record<string, unknown>;
+      const signals = responseData.signals as Record<string, unknown> | undefined;
+      const posts = signals?.posts as Record<string, unknown> | undefined;
+      const platforms = posts?.platforms as Record<string, unknown> | undefined;
+      const riskScores = signals?.risk_scores as Array<Record<string, unknown>> | undefined;
+      const problemCategories = signals?.problem_categories as Record<string, unknown> | undefined;
+      const clusters = responseData.clusters as Record<string, unknown> | undefined;
+      const ctsBreakdown = responseData.cts_breakdown as {
+        signal_component: number;
+        risk_component: number;
+        cta_component: number;
+      } | null;
+
       const detail: ResponseDetail = {
-        id: responseData.id,
+        id: responseData.id as string,
         originalPost: {
-          content: responseData.signals?.posts?.content ?? '',
-          platform: responseData.signals?.posts?.platforms?.slug ?? 'unknown',
-          platformName: responseData.signals?.posts?.platforms?.name ?? 'Unknown',
-          externalUrl: responseData.signals?.posts?.external_url,
-          authorHandle: responseData.signals?.posts?.author_handle,
-          detectedAt: responseData.signals?.posts?.detected_at ?? responseData.created_at,
+          content: (posts?.content as string) ?? '',
+          platform: (platforms?.slug as string) ?? 'unknown',
+          platformName: (platforms?.name as string) ?? 'Unknown',
+          externalUrl: (posts?.external_url as string | null) ?? null,
+          authorHandle: (posts?.author_handle as string | null) ?? null,
+          detectedAt: (posts?.detected_at as string) ?? (responseData.created_at as string),
         },
         signal: {
-          emotionalIntensity: responseData.signals?.emotional_intensity ?? 0,
-          keywords: responseData.signals?.keywords ?? [],
-          problemCategory: responseData.signals?.problem_categories?.name ?? null,
+          emotionalIntensity: (signals?.emotional_intensity as number) ?? 0,
+          keywords: (signals?.keywords as string[]) ?? [],
+          problemCategory: (problemCategories?.name as string | null) ?? null,
         },
         risk: {
-          level: responseData.signals?.risk_scores?.[0]?.risk_level ?? 'low',
-          score: responseData.signals?.risk_scores?.[0]?.risk_score ?? 0,
-          factors: Object.keys(responseData.signals?.risk_scores?.[0]?.risk_factors ?? {}),
+          level: (riskScores?.[0]?.risk_level as RiskLevel) ?? 'low',
+          score: (riskScores?.[0]?.risk_score as number) ?? 0,
+          factors: Object.keys((riskScores?.[0]?.risk_factors as Record<string, unknown>) ?? {}),
         },
         responses: {
-          valueFirst: responseData.value_first_response,
-          softCta: responseData.soft_cta_response,
-          contextual: responseData.contextual_response,
-          selected: responseData.selected_response,
-          selectedType: responseData.selected_type ?? 'value_first',
+          valueFirst: responseData.value_first_response as string | null,
+          softCta: responseData.soft_cta_response as string | null,
+          contextual: responseData.contextual_response as string | null,
+          selected: responseData.selected_response as string,
+          selectedType: (responseData.selected_type as ResponseType) ?? 'value_first',
         },
         metrics: {
-          ctaLevel: responseData.cta_level ?? 0,
-          ctsScore: responseData.cts_score ?? 0,
-          ctsBreakdown: responseData.cts_breakdown,
-          canAutoPost: responseData.can_auto_post ?? false,
-          autoPostReason: responseData.auto_post_reason,
+          ctaLevel: (responseData.cta_level as CTALevel) ?? 0,
+          ctsScore: (responseData.cts_score as number) ?? 0,
+          ctsBreakdown: ctsBreakdown,
+          canAutoPost: (responseData.can_auto_post as boolean) ?? false,
+          autoPostReason: responseData.auto_post_reason as string | null,
         },
-        cluster: responseData.clusters
-          ? { id: responseData.clusters.id, name: responseData.clusters.name }
+        cluster: clusters
+          ? { id: clusters.id as string, name: clusters.name as string }
           : null,
-        createdAt: responseData.created_at,
+        createdAt: responseData.created_at as string,
       };
 
       setResponse(detail);
@@ -475,7 +490,7 @@ export default function QueueDetailScreen() {
           <View className="mb-3 flex-row items-center justify-between">
             <View className="flex-row items-center">
               <Ionicons
-                name={getPlatformIcon(response.originalPost.platform) as any}
+                name={getPlatformIcon(response.originalPost.platform) as keyof typeof Ionicons.glyphMap}
                 size={20}
                 color="#3b82f6"
               />

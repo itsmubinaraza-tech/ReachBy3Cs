@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useOrg } from '@/contexts/org-context';
 import { useRole } from '@/hooks/use-role';
-import { mockQuickStats, mockRecentActivity, type RecentActivity } from '@/lib/mock-data';
+import { useDashboardStats } from '@/hooks/use-dashboard-stats';
+import { mockRecentActivity, type RecentActivity } from '@/lib/mock-data';
 import { cn, formatRelativeTime } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { organization, isLoading: orgLoading } = useOrg();
   const { role, isAdmin, canReview } = useRole();
+  const { stats, isLoading: statsLoading } = useDashboardStats();
 
   // For demo mode, show content even without auth
   const isDemoMode = !user && !authLoading;
@@ -18,7 +20,7 @@ export default function DashboardPage() {
   const displayOrg = organization?.name || 'Demo Organization';
   const displayRole = isDemoMode ? 'Admin' : role.charAt(0).toUpperCase() + role.slice(1);
 
-  if (authLoading || orgLoading) {
+  if (authLoading || orgLoading || statsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white" />
@@ -65,7 +67,7 @@ export default function DashboardPage() {
 
         {/* Quick stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8">
-          {mockQuickStats.map((stat) => (
+          {stats.map((stat) => (
             <StatCard
               key={stat.id}
               title={stat.title}
@@ -86,7 +88,7 @@ export default function DashboardPage() {
               {(canReview || isDemoMode) && (
                 <ActionCard
                   title="Review Queue"
-                  description="6 responses awaiting approval"
+                  description={`${stats[0]?.value || '0'} responses awaiting approval`}
                   href="/dashboard/queue"
                   buttonText="Go to Queue"
                   icon={
@@ -99,7 +101,7 @@ export default function DashboardPage() {
                       />
                     </svg>
                   }
-                  badge="6"
+                  badge={stats[0]?.value || '0'}
                 />
               )}
 

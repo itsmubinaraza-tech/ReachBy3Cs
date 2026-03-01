@@ -429,3 +429,114 @@ export type PlatformSearchConfig =
   | TwitterSearchConfig
   | QuoraSearchConfig
   | GoogleSearchConfig;
+
+// ============================================
+// Supabase Database Type
+// ============================================
+
+/**
+ * Database type for typed Supabase client
+ * Provides type safety for all database operations
+ */
+export interface Database {
+  public: {
+    Tables: {
+      organizations: {
+        Row: Organization;
+        Insert: OrganizationInsert;
+        Update: Partial<OrganizationInsert>;
+      };
+      users: {
+        Row: User;
+        Insert: UserInsert;
+        Update: Partial<UserInsert>;
+      };
+      problem_categories: {
+        Row: ProblemCategory;
+        Insert: ProblemCategoryInsert;
+        Update: Partial<ProblemCategoryInsert>;
+      };
+      platforms: {
+        Row: Platform;
+        Insert: Omit<Platform, 'id' | 'created_at'>;
+        Update: Partial<Omit<Platform, 'id' | 'created_at'>>;
+      };
+      posts: {
+        Row: Post;
+        Insert: PostInsert;
+        Update: Partial<PostInsert>;
+      };
+      signals: {
+        Row: Signal;
+        Insert: SignalInsert;
+        Update: Partial<SignalInsert>;
+      };
+      risk_scores: {
+        Row: RiskScore;
+        Insert: RiskScoreInsert;
+        Update: Partial<RiskScoreInsert>;
+      };
+      responses: {
+        Row: Response;
+        Insert: ResponseInsert;
+        Update: Partial<ResponseInsert>;
+      };
+      engagement_queue: {
+        Row: EngagementQueue;
+        Insert: EngagementQueueInsert;
+        Update: Partial<EngagementQueueInsert>;
+      };
+      clusters: {
+        Row: Cluster;
+        Insert: ClusterInsert;
+        Update: Partial<ClusterInsert>;
+      };
+      cluster_members: {
+        Row: ClusterMember;
+        Insert: Omit<ClusterMember, 'id' | 'added_at'>;
+        Update: Partial<Omit<ClusterMember, 'id' | 'added_at'>>;
+      };
+      audit_log: {
+        Row: AuditLog;
+        Insert: Omit<AuditLog, 'id' | 'created_at'>;
+        Update: never;
+      };
+      analytics_events: {
+        Row: AnalyticsEvent;
+        Insert: Omit<AnalyticsEvent, 'id' | 'created_at'>;
+        Update: never;
+      };
+      daily_metrics: {
+        Row: DailyMetrics;
+        Insert: Omit<DailyMetrics, 'id' | 'created_at'>;
+        Update: Partial<Omit<DailyMetrics, 'id' | 'created_at'>>;
+      };
+      organization_platforms: {
+        Row: OrganizationPlatform;
+        Insert: Omit<OrganizationPlatform, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<OrganizationPlatform, 'id' | 'created_at'>>;
+      };
+      automation_rules: {
+        Row: AutomationRule;
+        Insert: AutomationRuleInsert;
+        Update: Partial<AutomationRuleInsert>;
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      get_user_organization_id: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+    };
+    Enums: {
+      user_role: UserRole;
+      risk_level: RiskLevel;
+      response_type: ResponseType;
+      response_status: ResponseStatus;
+      content_type: ContentType;
+      queue_status: QueueStatus;
+      device_type: DeviceType;
+    };
+  };
+}
