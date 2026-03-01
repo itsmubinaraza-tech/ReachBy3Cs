@@ -411,6 +411,10 @@ CREATE POLICY "orgs_read" ON public.organizations
   FOR SELECT TO authenticated
   USING (id = get_user_organization_id());
 
+CREATE POLICY "orgs_insert" ON public.organizations
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
 CREATE POLICY "orgs_service" ON public.organizations
   FOR ALL TO service_role
   USING (true);

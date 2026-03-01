@@ -56,11 +56,12 @@ export function useDashboardStats(): UseDashboardStatsResult {
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayISO = yesterday.toISOString();
 
-      // Fetch pending reviews count
+      // Fetch pending reviews count from engagement_queue (filtered by org)
       const { count: pendingCount, error: pendingError } = await supabase
-        .from('responses')
+        .from('engagement_queue')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('organization_id', organization.id)
+        .eq('status', 'queued');
 
       if (pendingError) throw pendingError;
 

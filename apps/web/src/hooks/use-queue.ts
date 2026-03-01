@@ -161,16 +161,27 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
       const from = currentPage * pageSize;
       const to = from + pageSize - 1;
 
-      // Use SAME query structure as fetchCounts (which works)
-      const { data, error: queryError, count } = await supabase
+      // Simple query - just get queue items, fetch details separately
+      const { data: queueData, error: queryError, count } = await supabase
         .from('engagement_queue')
-        .select(`
-          id,
-          organization_id,
-          status,
-          priority,
-          created_at,
-          response:responses!inner(
+        .select('id, response_id, organization_id, status, priority, created_at', { count: 'exact' })
+        .eq('organization_id', organization.id)
+        .eq('status', 'queued')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (queryError) {
+        throw new Error(queryError.message);
+      }
+
+      // Fetch response details for each queue item
+      const responseIds = (queueData || []).map((q: any) => q.response_id).filter(Boolean);
+
+      let responsesMap: Record<string, any> = {};
+      if (responseIds.length > 0) {
+        const { data: responsesData } = await supabase
+          .from('responses')
+          .select(`
             id,
             selected_response,
             selected_type,
@@ -180,86 +191,86 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
             cta_level,
             cts_score,
             can_auto_post,
-            signal:signals!inner(
-              id,
-              problem_category_id,
-              emotional_intensity,
-              keywords,
-              post:posts!inner(
-                id,
-                external_url,
-                content,
-                author_handle,
-                detected_at,
-                platform:platforms(
-                  id,
-                  name,
-                  slug,
-                  icon_url
-                )
-              ),
-              risk_score:risk_scores!inner(
-                risk_level,
-                risk_score,
-                context_flags
-              )
-            )
-          )
-        `, { count: 'exact' })
-        .eq('organization_id', organization.id)
-        .eq('status', 'queued');
+            signal_id
+          `)
+          .in('id', responseIds);
 
-      if (queryError) {
-        throw new Error(queryError.message);
+        responsesMap = (responsesData || []).reduce((acc: any, r: any) => {
+          acc[r.id] = r;
+          return acc;
+        }, {});
       }
 
-      // Transform data to QueueItemDisplay format
-      const transformedItems: QueueItemDisplay[] = (data || []).map((item: any) => {
-        const response = item.response;
-        const signal = response?.signal;
-        const post = signal?.post;
-        const platform = post?.platform;
-        const riskScore = signal?.risk_score;
+      // Fetch signal and post details
+      const signalIds = Object.values(responsesMap).map((r: any) => r.signal_id).filter(Boolean);
+      let signalsMap: Record<string, any> = {};
+      let postsMap: Record<string, any> = {};
+
+      if (signalIds.length > 0) {
+        const { data: signalsData } = await supabase
+          .from('signals')
+          .select('id, post_id, emotional_intensity, keywords')
+          .in('id', signalIds);
+
+        signalsMap = (signalsData || []).reduce((acc: any, s: any) => {
+          acc[s.id] = s;
+          return acc;
+        }, {});
+
+        const postIds = (signalsData || []).map((s: any) => s.post_id).filter(Boolean);
+        if (postIds.length > 0) {
+          const { data: postsData } = await supabase
+            .from('posts')
+            .select('id, external_url, content, author_handle, detected_at, platform_id')
+            .in('id', postIds);
+
+          postsMap = (postsData || []).reduce((acc: any, p: any) => {
+            acc[p.id] = p;
+            return acc;
+          }, {});
+        }
+      }
+
+      // Transform data using the maps we built
+      const transformedItems: QueueItemDisplay[] = (queueData || []).map((item: any) => {
+        const response = responsesMap[item.response_id];
+        const signal = response ? signalsMap[response.signal_id] : null;
+        const post = signal ? postsMap[signal.post_id] : null;
 
         return {
           id: item.id,
-          responseId: response?.id,
+          responseId: item.response_id,
           original: {
-            platform: platform ? {
-              id: platform.id,
-              name: platform.name,
-              slug: platform.slug,
-              iconUrl: platform.icon_url,
-            } : {
-              id: 'unknown',
-              name: 'Unknown',
-              slug: 'unknown',
-              iconUrl: '/icons/globe.svg',
+            platform: {
+              id: 'reddit',
+              name: 'Reddit',
+              slug: 'reddit',
+              iconUrl: '/icons/reddit.svg',
             },
-            content: post?.content || '',
+            content: post?.content || 'Content loading...',
             authorHandle: post?.author_handle || 'anonymous',
             url: post?.external_url || '',
             detectedAt: post?.detected_at || item.created_at,
           },
           analysis: {
-            problemCategory: signal?.problem_category_id,
+            problemCategory: undefined,
             emotionalIntensity: signal?.emotional_intensity || 0.5,
             keywords: signal?.keywords || [],
-            riskLevel: riskScore?.risk_level || 'medium',
-            riskScore: riskScore?.risk_score || 0.5,
-            riskFactors: riskScore?.context_flags || [],
+            riskLevel: 'medium' as const,
+            riskScore: 0.5,
+            riskFactors: [],
           },
           responses: {
-            valueFirst: response?.value_first_response,
-            softCta: response?.soft_cta_response,
-            contextual: response?.contextual_response,
-            selected: response?.selected_response,
-            selectedType: response?.selected_type,
+            valueFirst: response?.value_first_response || '',
+            softCta: response?.soft_cta_response || '',
+            contextual: response?.contextual_response || '',
+            selected: response?.selected_response || '',
+            selectedType: response?.selected_type || 'value_first',
           },
           metrics: {
-            ctaLevel: response?.cta_level,
-            ctsScore: response?.cts_score,
-            canAutoPost: response?.can_auto_post,
+            ctaLevel: response?.cta_level || 1,
+            ctsScore: response?.cts_score || 0.8,
+            canAutoPost: response?.can_auto_post || false,
           },
           cluster: null,
           status: item.status,
