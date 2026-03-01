@@ -41,7 +41,7 @@ export default function NotificationsSettingsPage() {
             <strong>Email notifications</strong> are sent to your registered email address and can be used for digest summaries.
           </li>
           <li>
-            High-risk alerts are important for immediate attention and help maintain your brand's reputation.
+            High-risk alerts are important for immediate attention and help maintain your brand&apos;s reputation.
           </li>
         </ul>
       </div>

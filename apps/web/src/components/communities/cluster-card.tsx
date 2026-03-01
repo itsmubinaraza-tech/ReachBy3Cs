@@ -94,7 +94,7 @@ export function ClusterCard({
       {cluster.description && (
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic">
-            "{cluster.description}"
+            &ldquo;{cluster.description}&rdquo;
           </p>
         </div>
       )}
