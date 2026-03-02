@@ -328,13 +328,26 @@ TWITTER_ACCESS_SECRET=xxx
 - **mobile**: Tests pending (--passWithNoTests)
 - **agent-service**: Python service ready for testing
 
+## Pricing
+
+3-tier pricing model based on AI processing and search costs:
+
+| Plan | Price | Responses/mo | Detections/mo | Key Features |
+|------|-------|--------------|---------------|--------------|
+| **Starter** | $49 | 500 | 1,000 | 1 project, 3 configs, Reddit & Quora, manual posting |
+| **Professional** | $149 | 2,500 | 10,000 | 5 projects, 10 configs each, all platforms, auto-post, API |
+| **Enterprise** | $399 | 10,000 | 50,000 | Unlimited projects, custom AI, white-label, SLA |
+
+Overage rates: $0.05/response, $0.01/detection
+
 ## Demo Ready
 
 Run `npm run dev` and visit http://localhost:3000 to see:
-- **Landing Page**: 3Cs branding, value props, how it works, signup CTA
+- **Landing Page**: 3Cs branding, value props, how it works, pricing section
 - **Dashboard**: Stats and recent activity (at /dashboard)
-- **Queue**: Approve/reject with copy, open original, mark posted (at /dashboard/queue)
+- **Queue**: Approve/reject/edit + Copy/Open Original/Mark Posted (at /dashboard/queue)
 - **Projects**: Create and manage projects with search configs (at /dashboard/projects)
+- **Demo Mode**: Click "Try Free Demo" to see mock data without signup
 - **Trial Banner**: Shows remaining free trial uses
 - **Responsive Layout**: Mobile/tablet/desktop views
 
@@ -543,6 +556,34 @@ CREATE POLICY "orgs_insert" ON public.organizations
 CREATE POLICY "users_insert_own" ON public.users
   FOR INSERT TO authenticated WITH CHECK (id = auth.uid());
 ```
+
+### Demo Mode Showing Empty Queue (Fixed 2026-03-02)
+**Issue**: Demo mode users saw 0 items in queue instead of mock data.
+**Cause**: `shouldUseMockData` logic was too restrictive and had timing issues with state initialization.
+**Fix**: Simplified logic and used lazy state initializer:
+```typescript
+// Use lazy initializer to get demo mode synchronously on first client render
+const [isDemo, setIsDemo] = useState(() => getDemoModeFromStorage());
+
+// Use mock data if demo mode is enabled OR user is not authenticated
+const shouldUseMockData = isDemo || !user;
+```
+**Files fixed**:
+- `apps/web/src/app/(dashboard)/dashboard/queue/page.tsx`
+- `apps/web/src/hooks/use-dashboard-stats.ts`
+
+## Queue Workflow
+
+The queue supports manual posting with the following actions:
+
+1. **Approve** - Mark response as approved (green button)
+2. **Reject** - Mark response as rejected (red button)
+3. **Edit** - Open editor to modify response before approval (gray button)
+4. **Copy** - Copy response text to clipboard (for pasting on platform)
+5. **Open Original** - Open the original post URL in new tab
+6. **Mark Posted** - Mark as manually posted (completes the workflow)
+
+Keyboard shortcuts: `a` approve, `r` reject, `e` edit, `c` copy, `o` open, `p` posted
 
 ## Test Plans
 
