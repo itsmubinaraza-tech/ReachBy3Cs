@@ -478,6 +478,38 @@ export default function QueuePage() {
     }
   }, [showNotification, refreshQueue, shouldUseMockData]);
 
+  // Handle mark as posted (for manual posting workflow)
+  const handleMarkPosted = useCallback(
+    async (id: string) => {
+      if (isActioning) return;
+
+      setIsActioning(true);
+      try {
+        if (shouldUseMockData) {
+          // Optimistic update for mock data
+          setQueueItems((items) =>
+            items.map((item) =>
+              item.id === id ? { ...item, status: 'posted' as const } : item
+            )
+          );
+          showNotification('success', 'Marked as posted!');
+        } else {
+          // In real mode, we'd call an API to update the status
+          // For now, just do optimistic update
+          setQueueItems((items) =>
+            items.map((item) =>
+              item.id === id ? { ...item, status: 'posted' as const } : item
+            )
+          );
+          showNotification('success', 'Marked as posted!');
+        }
+      } finally {
+        setIsActioning(false);
+      }
+    },
+    [showNotification, isActioning, shouldUseMockData]
+  );
+
   // Keyboard shortcuts
   useKeyboardQueue({
     onNavigateNext: handleNavigateNext,
@@ -646,6 +678,7 @@ export default function QueuePage() {
           onApprove={handleApprove}
           onReject={handleReject}
           onEdit={handleEdit}
+          onMarkPosted={handleMarkPosted}
           onItemClick={handleItemClick}
           isLoading={supabaseLoading}
         />

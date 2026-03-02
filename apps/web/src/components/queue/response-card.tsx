@@ -19,6 +19,7 @@ interface ResponseCardProps {
   onApprove: (id: string, selectedType?: ResponseType) => Promise<void>;
   onReject: (id: string) => Promise<void>;
   onEdit: (id: string) => void;
+  onMarkPosted?: (id: string) => Promise<void>;
   onClick?: () => void;
   className?: string;
 }
@@ -32,6 +33,7 @@ export function ResponseCard({
   onApprove,
   onReject,
   onEdit,
+  onMarkPosted,
   onClick,
   className,
 }: ResponseCardProps) {
@@ -47,6 +49,29 @@ export function ResponseCard({
     },
     []
   );
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(selectedResponse);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }, [selectedResponse]);
+
+  const handleOpenOriginal = useCallback(() => {
+    window.open(item.original.url, '_blank', 'noopener,noreferrer');
+  }, [item.original.url]);
+
+  const handleMarkPosted = useCallback(async () => {
+    if (onMarkPosted) {
+      setIsLoading(true);
+      try {
+        await onMarkPosted(item.id);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [item.id, onMarkPosted]);
 
   const handleApprove = useCallback(async () => {
     setIsLoading(true);
@@ -176,7 +201,11 @@ export function ResponseCard({
           onApprove={handleApprove}
           onReject={handleReject}
           onEdit={handleEdit}
+          onCopy={handleCopy}
+          onOpenOriginal={handleOpenOriginal}
+          onMarkPosted={onMarkPosted ? handleMarkPosted : undefined}
           isLoading={isLoading}
+          showPostActions={true}
         />
       </div>
     </div>

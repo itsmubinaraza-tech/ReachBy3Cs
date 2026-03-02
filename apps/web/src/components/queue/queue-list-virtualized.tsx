@@ -17,6 +17,7 @@ interface QueueListVirtualizedProps {
   onApprove: (id: string, selectedType?: ResponseType) => Promise<void>;
   onReject: (id: string) => Promise<void>;
   onEdit: (id: string) => void;
+  onMarkPosted?: (id: string) => Promise<void>;
   onItemClick?: (id: string) => void;
   onLoadMore?: () => Promise<void>;
   hasMore?: boolean;
@@ -39,6 +40,7 @@ export function QueueListVirtualized({
   onApprove,
   onReject,
   onEdit,
+  onMarkPosted,
   onItemClick,
   onLoadMore,
   hasMore = false,
@@ -181,6 +183,7 @@ export function QueueListVirtualized({
                   onApprove={onApprove}
                   onReject={onReject}
                   onEdit={onEdit}
+                  onMarkPosted={onMarkPosted}
                   onClick={onItemClick ? () => onItemClick(item.id) : undefined}
                 />
               ) : (
@@ -250,6 +253,7 @@ export function QueueListSimple({
   onApprove,
   onReject,
   onEdit,
+  onMarkPosted,
   onItemClick,
   isLoading = false,
   className,
@@ -309,6 +313,7 @@ export function QueueListSimple({
             onApprove={onApprove}
             onReject={onReject}
             onEdit={onEdit}
+            onMarkPosted={onMarkPosted}
             onClick={onItemClick ? () => onItemClick(item.id) : undefined}
           />
         ) : (
