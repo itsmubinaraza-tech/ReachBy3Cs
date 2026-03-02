@@ -6,6 +6,12 @@ import { useAuth } from '@/contexts/auth-context';
 import { useOrg } from '@/contexts/org-context';
 import { mockQuickStats, type QuickStat } from '@/lib/mock-data';
 
+// Check if demo mode is enabled (set in localStorage by post-oauth page)
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('demo_mode') === 'true';
+}
+
 export interface DashboardStats {
   pendingReviews: number;
   approvedToday: number;
@@ -38,8 +44,8 @@ export function useDashboardStats(): UseDashboardStatsResult {
   const supabase = useMemo(() => createClient(), []);
 
   const fetchStats = useCallback(async () => {
-    // Use mock data if not authenticated or in demo mode
-    if (!isAuthenticated || !user || !organization) {
+    // Use mock data if in demo mode, not authenticated, or no organization
+    if (isDemoMode() || !isAuthenticated || !user || !organization) {
       setStats(mockQuickStats);
       setIsLoading(false);
       return;

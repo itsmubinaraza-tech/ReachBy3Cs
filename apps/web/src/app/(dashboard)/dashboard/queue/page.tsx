@@ -22,8 +22,11 @@ import { approveResponse, rejectResponse, editResponse, bulkApprove, bulkReject 
 import { mockQueueItems } from '@/lib/mock-data';
 import type { QueueItemDisplay, ResponseType, RiskLevel, DeviceType as DeviceTypeEnum } from 'shared-types';
 
-// Use real Supabase data - set to true for demo mode with mock data
-const USE_MOCK_DATA = false;
+// Check if demo mode is enabled (set in localStorage by post-oauth page)
+function getDemoModeFromStorage(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('demo_mode') === 'true';
+}
 
 // Map device type hook output to database enum
 function mapDeviceType(type: 'mobile' | 'tablet' | 'desktop'): DeviceTypeEnum {
@@ -70,8 +73,17 @@ export default function QueuePage() {
   const [localQueueItems, setLocalQueueItems] = useState<QueueItemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if we should use mock data (either flag is set or user is not authenticated)
-  const shouldUseMockData = USE_MOCK_DATA || (!user && supabaseError);
+  // Check if we should use mock data (demo mode or not authenticated)
+  // Use lazy initializer to get demo mode synchronously on first client render
+  const [isDemo, setIsDemo] = useState(() => getDemoModeFromStorage());
+
+  // Re-check demo mode when component mounts (for SSR hydration)
+  useEffect(() => {
+    setIsDemo(getDemoModeFromStorage());
+  }, []);
+
+  // Use mock data if demo mode is enabled OR user is not authenticated
+  const shouldUseMockData = isDemo || !user;
 
   // Sync supabase items to local state
   useEffect(() => {
@@ -246,7 +258,7 @@ export default function QueuePage() {
         setIsActioning(false);
       }
     },
-    [deviceInfo.type, showNotification, isActioning]
+    [deviceInfo.type, showNotification, isActioning, shouldUseMockData]
   );
 
   // Handle reject
@@ -281,7 +293,7 @@ export default function QueuePage() {
         setIsActioning(false);
       }
     },
-    [deviceInfo.type, showNotification, isActioning]
+    [deviceInfo.type, showNotification, isActioning, shouldUseMockData]
   );
 
   // Handle edit
@@ -335,7 +347,7 @@ export default function QueuePage() {
         }
       }
     },
-    [editingItem, deviceInfo.type, showNotification]
+    [editingItem, deviceInfo.type, showNotification, shouldUseMockData]
   );
 
   // Handle bulk approve
@@ -372,7 +384,7 @@ export default function QueuePage() {
     } finally {
       setIsActioning(false);
     }
-  }, [selectedIds, deviceInfo.type, showNotification, isActioning]);
+  }, [selectedIds, deviceInfo.type, showNotification, isActioning, shouldUseMockData]);
 
   // Handle bulk reject
   const handleBulkReject = useCallback(
@@ -410,7 +422,7 @@ export default function QueuePage() {
         setIsActioning(false);
       }
     },
-    [selectedIds, deviceInfo.type, showNotification, isActioning]
+    [selectedIds, deviceInfo.type, showNotification, isActioning, shouldUseMockData]
   );
 
   // Handle item click to open detail
@@ -464,7 +476,7 @@ export default function QueuePage() {
       await refreshQueue();
       showNotification('success', 'Queue refreshed');
     }
-  }, [showNotification, refreshQueue]);
+  }, [showNotification, refreshQueue, shouldUseMockData]);
 
   // Keyboard shortcuts
   useKeyboardQueue({

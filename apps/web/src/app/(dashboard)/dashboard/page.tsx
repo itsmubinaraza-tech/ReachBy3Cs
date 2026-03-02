@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useOrg } from '@/contexts/org-context';
@@ -8,14 +9,27 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { mockRecentActivity, type RecentActivity } from '@/lib/mock-data';
 import { cn, formatRelativeTime } from '@/lib/utils';
 
+// Check if demo mode is enabled (set in localStorage by post-oauth page)
+function checkDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('demo_mode') === 'true';
+}
+
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { organization, isLoading: orgLoading } = useOrg();
   const { role, isAdmin, canReview } = useRole();
   const { stats, isLoading: statsLoading } = useDashboardStats();
 
-  // For demo mode, show content even without auth
-  const isDemoMode = !user && !authLoading;
+  // Check demo mode from localStorage
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    setIsDemo(checkDemoMode());
+  }, []);
+
+  // For demo mode, show content even without auth or organization
+  const isDemoMode = isDemo || (!user && !authLoading) || (!organization && !orgLoading);
   const displayName = user?.fullName || user?.email || 'Demo User';
   const displayOrg = organization?.name || 'Demo Organization';
   const displayRole = isDemoMode ? 'Admin' : role.charAt(0).toUpperCase() + role.slice(1);
