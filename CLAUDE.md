@@ -40,6 +40,9 @@ A multi-tenant SaaS platform that identifies high-intent conversations online, s
 │                     │   Vercel (Next.js Web App)  │                   │
 │                     │                             │                   │
 │                     │  Dashboard ──▶ Queue ──▶ Analytics             │
+│                     │       │                                        │
+│                     │       ▼                                        │
+│                     │   Projects ──▶ Search Configs                  │
 │                     └─────────────────────────────┘                   │
 │                                   │                                    │
 │                                   ▼                                    │
@@ -55,6 +58,37 @@ A multi-tenant SaaS platform that identifies high-intent conversations online, s
 │                     └─────────────────────────────┘                   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
+
+### Data Model (Organization Structure)
+
+┌───────────────┐
+│  Organization │
+└───────┬───────┘
+        │ has many
+        ▼
+┌───────────────┐
+│    Project    │  (max unlimited per org)
+│               │
+│ - name        │
+│ - description │
+│ - tone        │
+│ - value_prop  │
+│ - status      │
+└───────┬───────┘
+        │ has many (max 10)
+        ▼
+┌───────────────────────┐
+│  Project Search Config │
+│                       │
+│ - keywords[]          │
+│ - excluded_keywords[] │
+│ - matching_mode       │
+│ - max_post_age_days   │
+│ - platforms[]         │
+│ - reddit_subreddits[] │
+│ - min_engagement      │
+│ - crawl_frequency     │
+└───────────────────────┘
 ```
 
 ### Why Phase 1 (Manual Posting)?
@@ -263,13 +297,23 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 17: Tenant Onboarding & Settings
 
 ### Deployment Status
-- [x] Web App deployed on Vercel (https://reachby3cs.vercel.app)
+- [x] Web App deployed on Vercel
+  - Production: https://reachby3cs.com (custom domain)
+  - Preview: https://reachby3cs.vercel.app
 - [x] Supabase database configured (https://lwubdaoaqoutcutqhnim.supabase.co)
 - [x] SerpAPI integration working
 - [x] Python agent service deployed on Render (https://reachby3cs-agent.onrender.com)
 - [x] First end-to-end test completed
 
-### Additional Features
+### Additional Features (2026 Sprint)
+- [x] Feature 1: Fix Signup Flow & Add Google OAuth
+- [x] Feature 2: Database Schema - Projects & Search Configs
+- [x] Feature 3: Projects UI - List & Create
+- [x] Feature 4: Project Detail & Search Config Form
+- [x] Feature 5: Improve Queue Approval Workflow
+- [ ] Feature 6: Organization Onboarding Enhancement (pending)
+
+### Previously Completed
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
 - [x] Free Trial System: 10 uses with localStorage tracking
 - [x] Trial Banner: Shows remaining uses in dashboard
@@ -289,7 +333,8 @@ TWITTER_ACCESS_SECRET=xxx
 Run `npm run dev` and visit http://localhost:3000 to see:
 - **Landing Page**: 3Cs branding, value props, how it works, signup CTA
 - **Dashboard**: Stats and recent activity (at /dashboard)
-- **Queue**: Approve/reject functionality (at /dashboard/queue)
+- **Queue**: Approve/reject with copy, open original, mark posted (at /dashboard/queue)
+- **Projects**: Create and manage projects with search configs (at /dashboard/projects)
 - **Trial Banner**: Shows remaining free trial uses
 - **Responsive Layout**: Mobile/tablet/desktop views
 
@@ -319,6 +364,16 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 - `apps/web/src/app/(dashboard)/dashboard/page.tsx` - Dashboard with stats
 - `apps/web/src/app/(dashboard)/dashboard/queue/page.tsx` - Queue with approve/reject
 - `apps/web/vercel.json` - Vercel deployment config
+
+### Projects System (New)
+- `apps/web/src/app/(dashboard)/dashboard/projects/page.tsx` - Projects list
+- `apps/web/src/app/(dashboard)/dashboard/projects/new/page.tsx` - Create project form
+- `apps/web/src/app/(dashboard)/dashboard/projects/[id]/page.tsx` - Project detail with search configs
+- `apps/web/src/hooks/use-projects.ts` - Projects CRUD hook with memoization
+- `apps/web/src/hooks/use-search-configs.ts` - Search configs CRUD hook
+- `apps/web/src/components/projects/project-card.tsx` - Project card, empty state, skeleton
+- `apps/web/src/components/projects/search-config-form.tsx` - Search config form with all fields
+- `apps/web/src/components/projects/keyword-manager.tsx` - Tag-based keyword input
 
 ### Mobile App
 - `apps/mobile/lib/supabase.ts` - Supabase client with secure storage
@@ -483,6 +538,43 @@ CREATE POLICY "orgs_insert" ON public.organizations
 CREATE POLICY "users_insert_own" ON public.users
   FOR INSERT TO authenticated WITH CHECK (id = auth.uid());
 ```
+
+## Test Plans
+
+### Unit Test Guidelines
+All new features must include unit tests covering:
+- Component rendering
+- User interactions (clicks, input changes)
+- State management
+- Error handling
+- Edge cases
+
+### E2E Test Guidelines
+Critical user flows must have E2E tests:
+- Authentication (login, signup, OAuth)
+- Queue operations (approve, reject, copy, post)
+- Project management (create, edit, delete)
+- Settings changes
+
+### Test Commands
+```bash
+# Run unit tests
+npm run test
+
+# Run unit tests with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+```
+
+### Test Coverage Requirements
+- **Minimum Coverage**: 80% for new code
+- **Critical Paths**: 100% coverage for auth and payment flows
+- **Components**: All exported components must have render tests
 
 ## Crawling Workflow
 

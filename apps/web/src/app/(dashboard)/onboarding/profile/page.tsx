@@ -7,7 +7,7 @@ import { updateOrganizationProfile } from '@/lib/onboarding/actions';
 
 export default function ProfileOnboardingPage() {
   const { organization, settings } = useOrg();
-  const settingsObj = (settings as Record<string, unknown>) || {};
+  const settingsObj = (settings as unknown as Record<string, unknown>) || {};
 
   const [formData, setFormData] = useState<ProfileFormData>({
     appName: organization?.name || '',

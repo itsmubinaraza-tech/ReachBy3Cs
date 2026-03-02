@@ -362,6 +362,85 @@ export async function bulkApprove(
 }
 
 /**
+ * Mark a response as posted (after manual copy/paste)
+ */
+export async function markAsPosted(
+  id: string,
+  deviceType: DeviceType,
+  externalUrl?: string
+): Promise<ActionResult> {
+  const supabase = createClient();
+
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return { success: false, error: 'User profile not found' };
+    }
+
+    // Get current response state
+    const { data: currentResponse, error: fetchError } = await supabase
+      .from('responses')
+      .select('status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !currentResponse) {
+      return { success: false, error: 'Response not found' };
+    }
+
+    // Update response
+    const { error: updateError } = await supabase
+      .from('responses')
+      .update({
+        status: 'posted' as ResponseStatus,
+        posted_at: new Date().toISOString(),
+        posted_external_url: externalUrl || null,
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      return { success: false, error: `Failed to mark as posted: ${updateError.message}` };
+    }
+
+    // Create audit log
+    const { error: auditError } = await supabase.from('audit_log').insert({
+      organization_id: profile.organization_id,
+      user_id: user.id,
+      action_type: 'response.posted',
+      action_category: 'engagement',
+      entity_type: 'response',
+      entity_id: id,
+      action_data: { method: 'manual', external_url: externalUrl },
+      previous_state: { status: currentResponse.status },
+      new_state: { status: 'posted' },
+      device_type: deviceType,
+    });
+
+    if (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
+    revalidatePath('/dashboard/queue');
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking as posted:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
  * Bulk reject multiple responses
  */
 export async function bulkReject(

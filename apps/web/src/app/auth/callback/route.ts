@@ -8,9 +8,21 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
+    if (!error && data.user) {
+      // Check if user has a profile with an organization
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('organization_id')
+        .eq('id', data.user.id)
+        .single();
+
+      // If user has no organization, redirect to post-oauth setup
+      if (!userProfile?.organization_id) {
+        return NextResponse.redirect(`${origin}/post-oauth`);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

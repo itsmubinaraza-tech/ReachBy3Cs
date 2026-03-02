@@ -30,6 +30,11 @@ export const mainNavItems: NavItem[] = [
     badge: 'queue-count',
   },
   {
+    label: 'Projects',
+    href: '/dashboard/projects',
+    icon: 'folder',
+  },
+  {
     label: 'Analytics',
     href: '/dashboard/analytics',
     icon: 'chart',

@@ -30,6 +30,7 @@ export interface AuthContextType extends AuthState {
     fullName: string,
     organizationName: string
   ) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -223,6 +224,25 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
     return { error: null };
   };
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) {
+      return { error: new Error(error.message) };
+    }
+
+    return { error: null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setState({
@@ -280,6 +300,7 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
         ...state,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
         resetPassword,
         updatePassword,

@@ -1,13 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { SettingsNav } from '@/components/settings';
 
-interface SettingsLayoutProps {
-  children: ReactNode;
-}
-
-export default function SettingsLayout({ children }: SettingsLayoutProps) {
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="mb-6">

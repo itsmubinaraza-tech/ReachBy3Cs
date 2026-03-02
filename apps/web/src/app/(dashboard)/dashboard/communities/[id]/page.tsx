@@ -9,7 +9,7 @@ import { useState } from 'react';
 export default function ClusterDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const clusterId = params.id as string;
+  const clusterId = params?.id as string;
 
   const [postsPage, setPostsPage] = useState(1);
 

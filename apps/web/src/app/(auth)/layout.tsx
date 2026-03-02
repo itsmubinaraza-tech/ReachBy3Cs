@@ -1,20 +1,14 @@
-import type { ReactNode } from 'react';
-
-interface AuthLayoutProps {
-  children: ReactNode;
-}
-
-export default function AuthLayout({ children }: AuthLayoutProps) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Needs-Matched Platform
+            ReachBy3Cs
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Engage with your audience authentically
+            Communicate. Connect. Community.
           </p>
         </div>
 
@@ -25,7 +19,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-          &copy; {new Date().getFullYear()} WeAttuned. All rights reserved.
+          &copy; {new Date().getFullYear()} ReachBy3Cs. All rights reserved.
         </p>
       </div>
     </div>

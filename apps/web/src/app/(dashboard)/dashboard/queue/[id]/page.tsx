@@ -48,7 +48,7 @@ export default function QueueDetailPage() {
   } | null>(null);
   const [isActioning, setIsActioning] = useState(false);
 
-  const id = params.id as string;
+  const id = params?.id as string;
 
   // Show notification
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {

@@ -23,6 +23,14 @@ export type DeviceType = 'web' | 'mobile_ios' | 'mobile_android' | 'tablet' | 'a
 
 export type CTALevel = 0 | 1 | 2 | 3;
 
+export type ProjectStatus = 'active' | 'paused' | 'archived';
+
+export type ProjectTone = 'professional' | 'casual' | 'friendly' | 'technical' | 'empathetic';
+
+export type MatchingMode = 'exact' | 'semantic' | 'both';
+
+export type CrawlFrequency = 'hourly' | 'daily' | 'weekly' | 'manual';
+
 // ============================================
 // Core Entities
 // ============================================
@@ -32,6 +40,38 @@ export interface Organization {
   name: string;
   slug: string;
   settings: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Project {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  value_proposition: string | null;
+  target_audience: string | null;
+  tone: ProjectTone;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectSearchConfig {
+  id: string;
+  project_id: string;
+  name: string;
+  keywords: string[];
+  excluded_keywords: string[];
+  matching_mode: MatchingMode;
+  max_post_age_days: number;
+  platforms: string[];
+  reddit_subreddits: string[];
+  min_engagement: number;
+  crawl_frequency: CrawlFrequency;
+  last_crawl_at: string | null;
+  next_crawl_at: string | null;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -320,6 +360,8 @@ export interface AutomationRule {
 
 export type OrganizationInsert = Omit<Organization, 'id' | 'created_at' | 'updated_at'>;
 export type UserInsert = Omit<User, 'created_at' | 'updated_at' | 'last_active_at'>;
+export type ProjectInsert = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
+export type ProjectSearchConfigInsert = Omit<ProjectSearchConfig, 'id' | 'created_at' | 'updated_at' | 'last_crawl_at' | 'next_crawl_at'>;
 export type ProblemCategoryInsert = Omit<ProblemCategory, 'id' | 'created_at' | 'updated_at'>;
 export type PostInsert = Omit<Post, 'id' | 'detected_at'>;
 export type SignalInsert = Omit<Signal, 'id' | 'created_at'>;
@@ -337,6 +379,8 @@ export type OrganizationUpdate = Partial<Omit<Organization, 'id' | 'created_at'>
 export type UserUpdate = Partial<Omit<User, 'id' | 'created_at'>> & { id: string };
 export type ResponseUpdate = Partial<Omit<Response, 'id' | 'created_at'>> & { id: string };
 export type ClusterUpdate = Partial<Omit<Cluster, 'id' | 'created_at'>> & { id: string };
+export type ProjectUpdate = Partial<Omit<Project, 'id' | 'created_at'>> & { id: string };
+export type ProjectSearchConfigUpdate = Partial<Omit<ProjectSearchConfig, 'id' | 'created_at'>> & { id: string };
 
 // ============================================
 // Joined/Extended Types (for API responses)
@@ -364,6 +408,11 @@ export interface QueueItemWithResponse extends EngagementQueue {
 export interface ClusterWithMembers extends Cluster {
   members: ClusterMember[];
   problem_category: ProblemCategory | null;
+}
+
+export interface ProjectWithConfigs extends Project {
+  search_configs: ProjectSearchConfig[];
+  config_count: number;
 }
 
 // ============================================
@@ -520,6 +569,16 @@ export interface Database {
         Row: AutomationRule;
         Insert: AutomationRuleInsert;
         Update: Partial<AutomationRuleInsert>;
+      };
+      projects: {
+        Row: Project;
+        Insert: ProjectInsert;
+        Update: Partial<ProjectInsert>;
+      };
+      project_search_configs: {
+        Row: ProjectSearchConfig;
+        Insert: ProjectSearchConfigInsert;
+        Update: Partial<ProjectSearchConfigInsert>;
       };
     };
     Views: Record<string, never>;

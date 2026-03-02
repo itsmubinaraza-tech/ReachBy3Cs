@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { GoogleAuthButton } from '@/components/auth/google-auth-button';
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('');
@@ -14,6 +15,9 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  // Memoize Supabase client to prevent infinite reconnections
+  const supabase = useMemo(() => createClient(), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +35,6 @@ export default function SignupPage() {
     }
 
     setIsLoading(true);
-
-    const supabase = createClient();
 
     // Sign up the user
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -108,6 +110,21 @@ export default function SignupPage() {
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
+
+      {/* Google OAuth Button */}
+      <GoogleAuthButton mode="signup" />
+
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            Or continue with email
+          </span>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

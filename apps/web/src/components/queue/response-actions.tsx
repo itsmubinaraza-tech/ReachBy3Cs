@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { MarkPostedModal } from './mark-posted-modal';
 
 interface ResponseActionsProps {
   onApprove: () => void;
@@ -13,6 +14,9 @@ interface ResponseActionsProps {
   compact?: boolean;
 }
 
+/**
+ * Basic approve/reject/edit actions for queue items
+ */
 export function ResponseActions({
   onApprove,
   onReject,
@@ -153,6 +157,137 @@ export function ResponseActions({
 }
 
 /**
+ * Post-approval actions: Copy, Open Original, Mark Posted
+ */
+interface PostApprovalActionsProps {
+  responseText: string;
+  originalUrl: string;
+  responseId: string;
+  onMarkPosted: (externalUrl?: string) => Promise<void>;
+  isLoading?: boolean;
+  className?: string;
+}
+
+export function PostApprovalActions({
+  responseText,
+  originalUrl,
+  responseId,
+  onMarkPosted,
+  isLoading = false,
+  className,
+}: PostApprovalActionsProps) {
+  const [showMarkPosted, setShowMarkPosted] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(responseText);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleOpenOriginal = () => {
+    window.open(originalUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleConfirmPosted = async (externalUrl?: string) => {
+    await onMarkPosted(externalUrl);
+    setShowMarkPosted(false);
+  };
+
+  const buttonClass = cn(
+    'px-3 py-2 text-sm font-medium rounded-lg transition-all',
+    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'disabled:opacity-50 disabled:cursor-not-allowed'
+  );
+
+  return (
+    <>
+      <div className={cn('flex flex-wrap gap-2', className)}>
+        {/* Copy Response */}
+        <button
+          onClick={handleCopy}
+          className={cn(
+            buttonClass,
+            'border border-gray-300 dark:border-gray-600',
+            'text-gray-700 dark:text-gray-200',
+            'hover:bg-gray-100 dark:hover:bg-gray-700',
+            'focus:ring-gray-500',
+            copySuccess && 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'
+          )}
+        >
+          <span className="flex items-center gap-1.5">
+            {copySuccess ? (
+              <>
+                <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-green-600 dark:text-green-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </>
+            )}
+          </span>
+        </button>
+
+        {/* Open Original */}
+        <button
+          onClick={handleOpenOriginal}
+          className={cn(
+            buttonClass,
+            'border border-gray-300 dark:border-gray-600',
+            'text-gray-700 dark:text-gray-200',
+            'hover:bg-gray-100 dark:hover:bg-gray-700',
+            'focus:ring-gray-500'
+          )}
+        >
+          <span className="flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Open Original
+          </span>
+        </button>
+
+        {/* Mark as Posted */}
+        <button
+          onClick={() => setShowMarkPosted(true)}
+          disabled={isLoading}
+          className={cn(
+            buttonClass,
+            'bg-green-600 text-white',
+            'hover:bg-green-700',
+            'focus:ring-green-500'
+          )}
+        >
+          <span className="flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Mark Posted
+          </span>
+        </button>
+      </div>
+
+      <MarkPostedModal
+        open={showMarkPosted}
+        onClose={() => setShowMarkPosted(false)}
+        onConfirm={handleConfirmPosted}
+        isLoading={isLoading}
+      />
+    </>
+  );
+}
+
+/**
  * Keyboard hint overlay for actions
  */
 export function ActionKeyboardHints({ className }: { className?: string }) {
@@ -169,6 +304,18 @@ export function ActionKeyboardHints({ className }: { className?: string }) {
       <span className="flex items-center gap-1">
         <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">e</kbd>
         Edit
+      </span>
+      <span className="flex items-center gap-1">
+        <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">c</kbd>
+        Copy
+      </span>
+      <span className="flex items-center gap-1">
+        <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">o</kbd>
+        Open
+      </span>
+      <span className="flex items-center gap-1">
+        <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">p</kbd>
+        Posted
       </span>
     </div>
   );
