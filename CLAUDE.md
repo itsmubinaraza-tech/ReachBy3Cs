@@ -235,7 +235,7 @@ TWITTER_ACCESS_SECRET=xxx
 6. Mark task complete only when ALL tests pass
 7. Do NOT proceed to next feature until current feature is fully tested
 
-## Implementation Progress (Updated: 2026-02-15)
+## Implementation Progress (Updated: 2026-03-02)
 
 ### Phase 1: Foundation - COMPLETE
 - [x] Feature 1: Project Setup & Infrastructure
@@ -252,7 +252,7 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 10: CTA Classifier & CTS Decision Skills
 
 ### Phase 3: Engagement Pipeline - COMPLETE (Code Written)
-- [x] Feature 11: Platform Crawlers (updating to SerpAPI)
+- [x] Feature 11: Platform Crawlers (SerpAPI integration working)
 - [x] Feature 12: Engagement Queue UI (Web + Mobile)
 - [x] Feature 13: Response Posting System (manual copy/paste workflow)
 - [ ] Feature 14: Auto-post Automation (Phase 2 - needs platform APIs)
@@ -263,11 +263,11 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 17: Tenant Onboarding & Settings
 
 ### Deployment Status
-- [x] Web App deployed on Vercel
-- [ ] Supabase database configured (needs env vars)
-- [ ] SerpAPI integration (needs API key)
-- [ ] Python agent service deployed (needs Railway/Render)
-- [ ] First end-to-end test
+- [x] Web App deployed on Vercel (https://reachby3cs.vercel.app)
+- [x] Supabase database configured (https://lwubdaoaqoutcutqhnim.supabase.co)
+- [x] SerpAPI integration working
+- [x] Python agent service deployed on Render (https://reachby3cs-agent.onrender.com)
+- [x] First end-to-end test completed
 
 ### Additional Features
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
@@ -341,13 +341,75 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 
 ## Agent Service Architecture
 
-The Python agent service (`agent-service/`) uses LangGraph for AI skills:
+The Python agent service (`agent-service/`) uses LangGraph for AI skills.
+**Production URL**: https://reachby3cs-agent.onrender.com
 
-### When Skills are Triggered
+### API Endpoints
 
-1. **Crawl API called** (`/api/crawl`) → Signal Detection → Risk Scoring
-2. **Process API called** (`/api/process`) → Response Generation → CTA/CTS Decision
-3. **Queue approval** → Updates response status, triggers posting flow
+#### Health & Status
+```bash
+GET /health                    # Service health check
+GET /health/ready              # Readiness probe
+```
+
+#### Crawlers (SerpAPI-powered)
+```bash
+# Search Google for discussions on specific platforms
+POST /crawlers/google/search
+{
+  "keywords": ["topic to search"],
+  "limit": 10,
+  "site_filter": "reddit.com"  # Optional: filter to specific site
+}
+
+# Search across multiple discussion platforms
+POST /crawlers/google/discussions?limit=10
+{
+  "keywords": ["search terms"],
+  "platforms": ["reddit", "quora"]  # Optional filter
+}
+```
+
+#### Pipeline (Full AI Processing)
+```bash
+# Process a post and save to queue
+POST /pipeline/process-and-save
+{
+  "url": "https://reddit.com/r/...",
+  "text": "Post content to analyze",
+  "platform": "reddit",
+  "organization_id": "uuid-here"
+}
+# Returns: { "status": "success", "queue_id": "...", "cts_score": 0.8, "requires_review": true }
+
+# Analyze without saving (for testing)
+POST /pipeline/analyze
+{
+  "text": "Post content",
+  "platform": "reddit",
+  "tenant_context": {
+    "app_name": "WeAttuned",
+    "value_prop": "Emotional intelligence app for couples"
+  }
+}
+```
+
+#### Individual Skills
+```bash
+POST /skills/signal-detection     # Detect problem signals
+POST /skills/risk-scoring         # Score risk level
+POST /skills/response-generation  # Generate responses
+POST /skills/cta-classifier       # Classify CTA level
+POST /skills/cts-decision         # Calculate confidence-to-send
+```
+
+#### Clustering
+```bash
+GET /clustering/clusters?organization_id=xxx     # List clusters
+GET /clustering/trending?organization_id=xxx     # Get trending clusters
+POST /clustering/assign                          # Assign post to cluster
+POST /clustering/run                             # Re-cluster all posts
+```
 
 ### Skill Execution Order
 
@@ -382,3 +444,71 @@ SerpAPI finds posts → Signal Detection → Risk Scoring → Response Generatio
 ### Database Triggers
 - `handle_new_user()` - Auto-creates user profile when user signs up via Supabase Auth
 - Ensures RLS policies work correctly for new users
+
+### Agent Service (Render)
+- URL: https://reachby3cs-agent.onrender.com
+- Health check: https://reachby3cs-agent.onrender.com/health
+- API docs: https://reachby3cs-agent.onrender.com/docs
+
+## Known Issues & Fixes
+
+### Queue Status Mapping (Fixed 2026-03-02)
+**Issue**: Queue page showed 0 items despite data existing in database.
+**Cause**: Database stores `status: 'queued'` but UI filtered for `status: 'pending'`.
+**Fix**: In `apps/web/src/hooks/use-queue.ts`, map status on fetch:
+```typescript
+status: item.status === 'queued' ? 'pending' : item.status
+```
+
+### Supabase Client Memoization (Fixed 2026-03-02)
+**Issue**: WebSocket infinite reconnection loop, excessive re-renders.
+**Cause**: `createClient()` called on every render, included in useEffect dependencies.
+**Fix**: Memoize Supabase client in all hooks:
+```typescript
+const supabase = useMemo(() => createClient(), []);
+```
+**Files fixed**:
+- `apps/web/src/hooks/use-queue.ts`
+- `apps/web/src/hooks/use-dashboard-stats.ts`
+- `apps/web/src/hooks/use-realtime-queue.ts`
+
+### RLS Policy for Signup (Fixed 2026-03-02)
+**Issue**: "Failed to create organization" error on signup.
+**Cause**: Missing INSERT policies on `organizations` and `users` tables.
+**Fix**: Added RLS policies:
+```sql
+CREATE POLICY "orgs_insert" ON public.organizations
+  FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "users_insert_own" ON public.users
+  FOR INSERT TO authenticated WITH CHECK (id = auth.uid());
+```
+
+## Crawling Workflow
+
+To crawl for new posts and add to queue:
+
+```bash
+# 1. Search for posts (returns post URLs and snippets)
+curl -X POST "https://reachby3cs-agent.onrender.com/crawlers/google/search" \
+  -H "Content-Type: application/json" \
+  -d '{"keywords": ["your search topic"], "limit": 10, "site_filter": "reddit.com"}'
+
+# 2. Process each post through AI pipeline and save to queue
+curl -X POST "https://reachby3cs-agent.onrender.com/pipeline/process-and-save" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://reddit.com/r/...",
+    "text": "Full post content",
+    "platform": "reddit",
+    "organization_id": "your-org-uuid"
+  }'
+```
+
+Each processed post:
+1. Gets analyzed for signals (keywords, emotional intensity)
+2. Gets risk scored (low/medium/high/blocked)
+3. Gets 3 response variants generated (value_first, soft_cta, contextual)
+4. Gets CTA level classified (0-3)
+5. Gets CTS score calculated (confidence-to-send)
+6. Gets added to engagement_queue for human review
