@@ -311,7 +311,7 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 3: Projects UI - List & Create
 - [x] Feature 4: Project Detail & Search Config Form
 - [x] Feature 5: Improve Queue Approval Workflow
-- [ ] Feature 6: Organization Onboarding Enhancement (pending)
+- [x] Feature 6: Organization Onboarding Enhancement
 
 ### Previously Completed
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
@@ -374,6 +374,11 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 - `apps/web/src/components/projects/project-card.tsx` - Project card, empty state, skeleton
 - `apps/web/src/components/projects/search-config-form.tsx` - Search config form with all fields
 - `apps/web/src/components/projects/keyword-manager.tsx` - Tag-based keyword input
+
+### Onboarding Flow (New)
+- `apps/web/src/app/(auth)/post-oauth/page.tsx` - Post-OAuth options (create org, join, demo)
+- `apps/web/src/app/(dashboard)/onboarding/organization/page.tsx` - Create organization form
+- `apps/web/src/app/(dashboard)/onboarding/project/page.tsx` - Create first project with keywords
 
 ### Mobile App
 - `apps/mobile/lib/supabase.ts` - Supabase client with secure storage
