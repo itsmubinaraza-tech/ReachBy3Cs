@@ -313,6 +313,169 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Choose the plan that fits your engagement needs. All plans include a 14-day free trial.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Starter Plan */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
+                <p className="text-gray-600 text-sm">Perfect for solopreneurs and small businesses testing AI engagement</p>
+              </div>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">$49</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  '500 AI-generated responses/month',
+                  '1,000 post detections/month',
+                  '1 project',
+                  '3 search configurations',
+                  'Reddit & Quora platforms',
+                  'Manual posting workflow',
+                  'Basic analytics dashboard',
+                  'Email support',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleTryDemo}
+                className="w-full py-3 px-6 rounded-xl font-semibold border-2 border-gray-200 text-gray-700 hover:border-blue-600 hover:text-blue-600 transition"
+              >
+                Start Free Trial
+              </button>
+            </div>
+
+            {/* Professional Plan - Most Popular */}
+            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-600 flex flex-col relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="bg-blue-600 text-white text-sm font-semibold px-4 py-1 rounded-full">
+                  Most Popular
+                </span>
+              </div>
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Professional</h3>
+                <p className="text-gray-600 text-sm">For growing businesses ready to scale their engagement</p>
+              </div>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">$149</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  '2,500 AI-generated responses/month',
+                  '10,000 post detections/month',
+                  '5 projects',
+                  '10 search configurations per project',
+                  'Reddit, Quora, Twitter/X, LinkedIn',
+                  'Auto-post for low-risk responses',
+                  'Advanced analytics & reporting',
+                  'Community clustering & insights',
+                  'API access',
+                  'Priority email & chat support',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleTryDemo}
+                className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg shadow-blue-600/25"
+              >
+                Start Free Trial
+              </button>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                <p className="text-gray-600 text-sm">For large organizations with custom needs and high volume</p>
+              </div>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">$399</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  '10,000 AI-generated responses/month',
+                  '50,000 post detections/month',
+                  'Unlimited projects',
+                  'Unlimited search configurations',
+                  'All platforms + custom integrations',
+                  'Advanced auto-post with custom rules',
+                  'Custom AI model fine-tuning',
+                  'White-label options',
+                  'Dedicated account manager',
+                  '99.9% uptime SLA',
+                  'Phone & video support',
+                  'Custom onboarding & training',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
+                    <CheckCircle2 className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/signup?plan=enterprise"
+                className="w-full py-3 px-6 rounded-xl font-semibold border-2 border-gray-200 text-gray-700 hover:border-purple-600 hover:text-purple-600 transition text-center"
+              >
+                Contact Sales
+              </Link>
+            </div>
+          </div>
+
+          {/* Cost Breakdown Note */}
+          <div className="mt-12 text-center">
+            <p className="text-sm text-gray-500 max-w-2xl mx-auto">
+              Pricing includes AI processing (GPT-4 powered responses), real-time platform monitoring via SerpAPI,
+              and all infrastructure costs. No hidden fees. Overages billed at standard rates.
+            </p>
+          </div>
+
+          {/* FAQ Teaser */}
+          <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg border border-gray-100 max-w-3xl mx-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Common Questions</h3>
+            <div className="grid md:grid-cols-2 gap-6 text-sm">
+              <div>
+                <p className="font-medium text-gray-900 mb-1">What counts as a response?</p>
+                <p className="text-gray-600">Each AI-generated response to a detected post counts as one response, regardless of response variants.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 mb-1">Can I upgrade or downgrade?</p>
+                <p className="text-gray-600">Yes, you can change plans anytime. Changes take effect on your next billing cycle.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 mb-1">What happens if I exceed limits?</p>
+                <p className="text-gray-600">We&apos;ll notify you at 80% usage. Overages are billed at $0.05/response and $0.01/detection.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 mb-1">Is there a free trial?</p>
+                <p className="text-gray-600">Yes! All plans include a 14-day free trial with full access. No credit card required to start.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 to-purple-700">
         <div className="max-w-4xl mx-auto text-center">
