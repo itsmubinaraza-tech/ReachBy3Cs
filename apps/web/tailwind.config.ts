@@ -92,12 +92,19 @@ const config: Config = {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(100%)' },
         },
+        'text-rotate': {
+          '0%, 20%': { transform: 'translateY(0%)' },
+          '33%, 53%': { transform: 'translateY(-33.33%)' },
+          '66%, 86%': { transform: 'translateY(-66.67%)' },
+          '100%': { transform: 'translateY(0%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'slide-in-right': 'slide-in-right 0.3s ease-out',
         'slide-out-right': 'slide-out-right 0.3s ease-out',
+        'text-rotate': 'text-rotate 9s ease-in-out infinite',
       },
       // Touch-friendly minimum sizes
       minHeight: {

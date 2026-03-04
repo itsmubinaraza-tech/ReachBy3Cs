@@ -14,10 +14,21 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import { AnimatedTagline } from '@/components/landing/animated-tagline';
+import { SearchForm } from '@/components/landing/search-form';
+import { DashboardPreview } from '@/components/landing/dashboard-preview';
+import { useLandingSearch } from '@/hooks/use-landing-search';
+import {
+  mockPreviewQueueItems,
+  mockRecentActivity,
+  mockTrendingClusters,
+  mockChartData,
+} from '@/lib/landing/mock-preview-data';
 
 export default function LandingPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const { search, results, isSearching, hasSearched, error } = useLandingSearch();
 
   const handleTryDemo = () => {
     // Track trial usage and redirect to dashboard
@@ -40,6 +51,9 @@ export default function LandingPage() {
     }
   };
 
+  // Use search results if available, otherwise mock data
+  const previewItems = hasSearched ? results : mockPreviewQueueItems;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Navigation */}
@@ -55,7 +69,7 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
               <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition">How It Works</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
+              <Link href="/pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</Link>
             </div>
             <div className="flex items-center gap-4">
               <Link
@@ -75,8 +89,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section with Animated Tagline */}
+      <section className="pt-32 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
@@ -84,18 +98,9 @@ export default function LandingPage() {
               AI-Powered Engagement Platform
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-              <span className="text-blue-600">Communicate.</span>{' '}
-              <span className="text-purple-600">Connect.</span>{' '}
-              <span className="text-indigo-600">Community.</span>
-            </h1>
+            <AnimatedTagline />
 
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Find high-intent conversations online, engage authentically at scale,
-              and build thriving communities around the problems you solve.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 mb-8">
               <button
                 onClick={handleTryDemo}
                 className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-600/25"
@@ -126,63 +131,39 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Dashboard Preview */}
-          <div className="mt-16 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none" />
-            <div className="bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
-              <div className="bg-gray-800 px-4 py-3 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="ml-4 text-gray-400 text-sm">ReachBy3Cs Dashboard</span>
-              </div>
-              <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  {[
-                    { label: 'Posts Detected', value: '1,247', change: '+12%' },
-                    { label: 'Responses Sent', value: '892', change: '+8%' },
-                    { label: 'Communities', value: '23', change: '+3' },
-                    { label: 'Engagement Rate', value: '34%', change: '+5%' },
-                  ].map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-lg p-4 shadow-sm">
-                      <p className="text-sm text-gray-500">{stat.label}</p>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <p className="text-sm text-green-600">{stat.change}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Pending Responses</h3>
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">12 new</span>
-                  </div>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                          <span className="text-orange-600 text-xs font-bold">R</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">r/relationships</p>
-                          <p className="text-xs text-gray-500">AI-generated response ready</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm">Approve</button>
-                          <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm">Edit</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+      {/* Two-Column Search & Preview Section */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Search Form (sticky on desktop) */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <SearchForm
+                onSearch={search}
+                isLoading={isSearching}
+                error={error}
+              />
+            </div>
+
+            {/* Right Column - Dashboard Preview */}
+            <div>
+              <DashboardPreview
+                items={previewItems}
+                activities={mockRecentActivity}
+                clusters={mockTrendingClusters}
+                chartData={mockChartData}
+                isLiveMode={hasSearched}
+                isLoading={isSearching}
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* The 3Cs Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -258,7 +239,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -309,169 +290,6 @@ export default function LandingPage() {
                 <p className="text-gray-600">{item.description}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose the plan that fits your engagement needs. All plans include a 14-day free trial.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Starter Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
-                <p className="text-gray-600 text-sm">Perfect for solopreneurs and small businesses testing AI engagement</p>
-              </div>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">$49</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  '500 AI-generated responses/month',
-                  '1,000 post detections/month',
-                  '1 project',
-                  '3 search configurations',
-                  'Reddit & Quora platforms',
-                  'Manual posting workflow',
-                  'Basic analytics dashboard',
-                  'Email support',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={handleTryDemo}
-                className="w-full py-3 px-6 rounded-xl font-semibold border-2 border-gray-200 text-gray-700 hover:border-blue-600 hover:text-blue-600 transition"
-              >
-                Start Free Trial
-              </button>
-            </div>
-
-            {/* Professional Plan - Most Popular */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-600 flex flex-col relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <span className="bg-blue-600 text-white text-sm font-semibold px-4 py-1 rounded-full">
-                  Most Popular
-                </span>
-              </div>
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Professional</h3>
-                <p className="text-gray-600 text-sm">For growing businesses ready to scale their engagement</p>
-              </div>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">$149</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  '2,500 AI-generated responses/month',
-                  '10,000 post detections/month',
-                  '5 projects',
-                  '10 search configurations per project',
-                  'Reddit, Quora, Twitter/X, LinkedIn',
-                  'Auto-post for low-risk responses',
-                  'Advanced analytics & reporting',
-                  'Community clustering & insights',
-                  'API access',
-                  'Priority email & chat support',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={handleTryDemo}
-                className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg shadow-blue-600/25"
-              >
-                Start Free Trial
-              </button>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
-                <p className="text-gray-600 text-sm">For large organizations with custom needs and high volume</p>
-              </div>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">$399</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  '10,000 AI-generated responses/month',
-                  '50,000 post detections/month',
-                  'Unlimited projects',
-                  'Unlimited search configurations',
-                  'All platforms + custom integrations',
-                  'Advanced auto-post with custom rules',
-                  'Custom AI model fine-tuning',
-                  'White-label options',
-                  'Dedicated account manager',
-                  '99.9% uptime SLA',
-                  'Phone & video support',
-                  'Custom onboarding & training',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-gray-700">
-                    <CheckCircle2 className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/signup?plan=enterprise"
-                className="w-full py-3 px-6 rounded-xl font-semibold border-2 border-gray-200 text-gray-700 hover:border-purple-600 hover:text-purple-600 transition text-center"
-              >
-                Contact Sales
-              </Link>
-            </div>
-          </div>
-
-          {/* Cost Breakdown Note */}
-          <div className="mt-12 text-center">
-            <p className="text-sm text-gray-500 max-w-2xl mx-auto">
-              Pricing includes AI processing (GPT-4 powered responses), real-time platform monitoring via SerpAPI,
-              and all infrastructure costs. No hidden fees. Overages billed at standard rates.
-            </p>
-          </div>
-
-          {/* FAQ Teaser */}
-          <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg border border-gray-100 max-w-3xl mx-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Common Questions</h3>
-            <div className="grid md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="font-medium text-gray-900 mb-1">What counts as a response?</p>
-                <p className="text-gray-600">Each AI-generated response to a detected post counts as one response, regardless of response variants.</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 mb-1">Can I upgrade or downgrade?</p>
-                <p className="text-gray-600">Yes, you can change plans anytime. Changes take effect on your next billing cycle.</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 mb-1">What happens if I exceed limits?</p>
-                <p className="text-gray-600">We&apos;ll notify you at 80% usage. Overages are billed at $0.05/response and $0.01/detection.</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 mb-1">Is there a free trial?</p>
-                <p className="text-gray-600">Yes! All plans include a 14-day free trial with full access. No credit card required to start.</p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
