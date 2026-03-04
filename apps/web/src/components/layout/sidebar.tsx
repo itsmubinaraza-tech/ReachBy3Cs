@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/hooks/use-role';
+import { useQueueCount } from '@/contexts/queue-count-context';
 import { hasPermission } from '@/lib/auth/rbac';
 import { NavIcon } from './nav-icons';
 import { sidebarSections, type NavItem } from './nav-config';
@@ -116,14 +117,13 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
 }
 
 function QueueBadge() {
-  // TODO: Connect to real queue count from context/API
-  const count = 0;
+  const { pendingCount } = useQueueCount();
 
-  if (count === 0) return null;
+  if (pendingCount === 0) return null;
 
   return (
     <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full">
-      {count > 99 ? '99+' : count}
+      {pendingCount > 99 ? '99+' : pendingCount}
     </span>
   );
 }

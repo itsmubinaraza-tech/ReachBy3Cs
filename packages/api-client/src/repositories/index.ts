@@ -5,6 +5,8 @@ import { PostRepository } from './posts';
 import { ResponseRepository } from './responses';
 import { ClusterRepository } from './clusters';
 import { AuditLogRepository } from './audit';
+import { ProjectRepository } from './projects';
+import { ProjectSearchConfigRepository } from './project-search-configs';
 
 // Export individual repositories
 export { BaseRepository } from './base';
@@ -14,6 +16,8 @@ export { PostRepository } from './posts';
 export { ResponseRepository } from './responses';
 export { ClusterRepository } from './clusters';
 export { AuditLogRepository } from './audit';
+export { ProjectRepository } from './projects';
+export { ProjectSearchConfigRepository } from './project-search-configs';
 
 // Export audit log insert type
 export type { AuditLogInsert } from './audit';
@@ -28,6 +32,8 @@ export interface Repositories {
   responses: ResponseRepository;
   clusters: ClusterRepository;
   auditLog: AuditLogRepository;
+  projects: ProjectRepository;
+  projectSearchConfigs: ProjectSearchConfigRepository;
 }
 
 /**
@@ -41,6 +47,8 @@ export function createRepositories(supabase: SupabaseClient): Repositories {
     responses: new ResponseRepository(supabase),
     clusters: new ClusterRepository(supabase),
     auditLog: new AuditLogRepository(supabase),
+    projects: new ProjectRepository(supabase),
+    projectSearchConfigs: new ProjectSearchConfigRepository(supabase),
   };
 }
 

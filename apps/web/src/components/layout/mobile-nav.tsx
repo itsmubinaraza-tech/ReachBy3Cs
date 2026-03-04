@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/hooks/use-role';
+import { useQueueCount } from '@/contexts/queue-count-context';
 import { hasPermission } from '@/lib/auth/rbac';
 import { NavIcon } from './nav-icons';
 import { mobileNavItems, type NavItem } from './nav-config';
@@ -70,14 +71,13 @@ function MobileNavItem({ item, isActive }: MobileNavItemProps) {
 }
 
 function MobileQueueBadge() {
-  // TODO: Connect to real queue count from context/API
-  const count = 0;
+  const { pendingCount } = useQueueCount();
 
-  if (count === 0) return null;
+  if (pendingCount === 0) return null;
 
   return (
     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full px-1">
-      {count > 99 ? '99+' : count}
+      {pendingCount > 99 ? '99+' : pendingCount}
     </span>
   );
 }
