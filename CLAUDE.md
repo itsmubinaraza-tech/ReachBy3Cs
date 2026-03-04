@@ -269,7 +269,7 @@ TWITTER_ACCESS_SECRET=xxx
 6. Mark task complete only when ALL tests pass
 7. Do NOT proceed to next feature until current feature is fully tested
 
-## Implementation Progress (Updated: 2026-03-02)
+## Implementation Progress (Updated: 2026-03-04)
 
 ### Phase 1: Foundation - COMPLETE
 - [x] Feature 1: Project Setup & Infrastructure
@@ -312,6 +312,9 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 4: Project Detail & Search Config Form
 - [x] Feature 5: Improve Queue Approval Workflow
 - [x] Feature 6: Organization Onboarding Enhancement
+- [x] Feature 7: ProjectRepository & ProjectSearchConfigRepository (api-client)
+- [x] Feature 8: QueueCountContext for real-time navigation badges
+- [x] Feature 9: TypeScript strict null checks fixes
 
 ### Previously Completed
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
@@ -327,6 +330,39 @@ TWITTER_ACCESS_SECRET=xxx
 - **web**: 18 tests (utility functions)
 - **mobile**: Tests pending (--passWithNoTests)
 - **agent-service**: Python service ready for testing
+
+## Repository Layer (api-client)
+
+The `packages/api-client/src/repositories/` provides type-safe data access:
+
+| Repository | Table | Key Methods |
+|------------|-------|-------------|
+| `OrganizationRepository` | organizations | findBySlug, getWithPlatforms, updateSettings |
+| `UserRepository` | users | findByEmail, updateRole, updateNotificationPreferences |
+| `PostRepository` | posts | findByExternalId, findWithSignals, checkDuplicate |
+| `ResponseRepository` | responses | approve, reject, edit, markPosted, markFailed |
+| `ClusterRepository` | clusters | findByOrganization, getWithMembers, updateStats |
+| `AuditLogRepository` | audit_log | logResponseApproved, logResponsePosted |
+| `ProjectRepository` | projects | findByOrganization, getWithConfigs, updateStatus, archive |
+| `ProjectSearchConfigRepository` | project_search_configs | createWithValidation (max 10), toggleActive, updateLastCrawl |
+
+**Usage:**
+```typescript
+import { createRepositories } from 'api-client';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(url, key);
+const repos = createRepositories(supabase);
+
+// Use typed repositories
+const { data: projects } = await repos.projects.findByOrganization(orgId);
+const { data: config } = await repos.projectSearchConfigs.createWithValidation({
+  project_id: projectId,
+  name: 'My Config',
+  keywords: ['keyword1', 'keyword2'],
+  // ... other fields
+});
+```
 
 ## Pricing
 
@@ -366,11 +402,14 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 ### Packages
 - `packages/shared-types/src/database.ts` - All DB types + insert/update helpers
 - `packages/api-client/src/repositories/` - Type-safe repository layer
+- `packages/api-client/src/repositories/projects.ts` - ProjectRepository (CRUD + getWithConfigs)
+- `packages/api-client/src/repositories/project-search-configs.ts` - ProjectSearchConfigRepository (max 10 validation)
 
 ### Web App
 - `apps/web/src/middleware.ts` - Auth protection middleware
 - `apps/web/src/contexts/auth-context.tsx` - Auth state management
 - `apps/web/src/contexts/org-context.tsx` - Organization context
+- `apps/web/src/contexts/queue-count-context.tsx` - Real-time queue count for navigation badges
 - `apps/web/src/lib/auth/rbac.ts` - Role-based permissions (25+ permissions)
 - `apps/web/src/components/layout/` - Responsive navigation components
 - `apps/web/src/hooks/` - Device detection, keyboard shortcuts, sidebar state
@@ -571,6 +610,42 @@ const shouldUseMockData = isDemo || !user;
 **Files fixed**:
 - `apps/web/src/app/(dashboard)/dashboard/queue/page.tsx`
 - `apps/web/src/hooks/use-dashboard-stats.ts`
+
+### Recharts Type Compatibility (Fixed 2026-03-04)
+**Issue**: recharts 3.x components (`BarChart`, `LineChart`, etc.) caused TypeScript JSX errors.
+**Cause**: recharts 3.x has incompatible types with React 18.
+**Fix**: Downgraded recharts from 3.7.0 to 2.12.7:
+```bash
+npm install recharts@2.12.7
+```
+
+### TypeScript Strict Null Checks (Fixed 2026-03-04)
+**Issue**: Multiple TypeScript errors for nullable values (`pathname`, `searchParams`, array indexes).
+**Cause**: Strict null checking in TypeScript 5.3 identified potential runtime errors.
+**Fix**: Added null coalescing and optional chaining throughout:
+```typescript
+// Navigation components
+pathname?.startsWith(href) ?? false
+
+// Hooks with searchParams
+searchParams?.get('status') || 'pending'
+
+// Array index safety
+visiblePages[0] ?? 1
+```
+**Files fixed**:
+- `apps/web/src/components/layout/sidebar.tsx`
+- `apps/web/src/components/layout/mobile-nav.tsx`
+- `apps/web/src/components/layout/mobile-sidebar.tsx`
+- `apps/web/src/components/settings/settings-nav.tsx`
+- `apps/web/src/components/communities/cluster-list.tsx`
+- `apps/web/src/hooks/use-queue.ts`
+- `apps/web/src/hooks/use-dashboard-stats.ts`
+- `apps/web/src/hooks/use-realtime-activity.ts`
+- `apps/web/src/hooks/use-settings.ts`
+- `apps/web/src/hooks/use-onboarding.ts`
+- `apps/web/src/lib/analytics/queries.ts`
+- `apps/web/src/lib/onboarding/actions.ts`
 
 ## Queue Workflow
 
