@@ -330,7 +330,10 @@ export async function getRecentActivity(
 
     const activities: ActivityItem[] = (data || []).map((log) => {
       const actionData = log.action_data as Record<string, unknown> | null;
-      const users = log.users as { full_name: string | null; email: string } | null;
+      // Handle both array and object formats from Supabase join
+      const usersData = log.users;
+      const user = Array.isArray(usersData) ? usersData[0] : usersData;
+      const userData = user as { full_name: string | null; email: string } | null;
       return {
         id: log.id as string,
         type: mapActionToActivityType(log.action_type as string),
@@ -340,7 +343,7 @@ export async function getRecentActivity(
           action_data: actionData,
         }),
         timestamp: log.created_at as string,
-        user: users?.full_name || users?.email?.split('@')[0] || undefined,
+        user: userData?.full_name || userData?.email?.split('@')[0] || undefined,
       };
     });
 

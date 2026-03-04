@@ -112,11 +112,18 @@ export async function saveProblemCategories(
     }
   }
 
-  // Update onboarding step
+  // Update onboarding step - fetch current settings and merge
+  const { data: orgData } = await supabase
+    .from('organizations')
+    .select('settings')
+    .eq('id', orgId)
+    .single();
+
+  const currentSettings = (orgData?.settings as Record<string, unknown>) || {};
   const { error: updateError } = await supabase
     .from('organizations')
     .update({
-      settings: supabase.sql`settings || '{"onboarding_step": 3}'::jsonb`,
+      settings: { ...currentSettings, onboarding_step: 3 },
       updated_at: new Date().toISOString(),
     })
     .eq('id', orgId);

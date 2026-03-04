@@ -67,7 +67,7 @@ export function SettingsNav() {
         {visibleItems.map((item) => {
           const isActive =
             pathname === item.href ||
-            (item.href !== '/dashboard/settings' && pathname.startsWith(item.href));
+            (item.href !== '/dashboard/settings' && (pathname?.startsWith(item.href) ?? false));
 
           return (
             <li key={item.href}>

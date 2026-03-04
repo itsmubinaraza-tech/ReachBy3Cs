@@ -17,7 +17,7 @@ export function MobileNav() {
     if (href === '/dashboard') {
       return pathname === '/dashboard';
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href) ?? false;
   };
 
   const visibleItems = mobileNavItems.filter((item) => {

@@ -40,7 +40,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
     if (href === '/dashboard') {
       return pathname === '/dashboard';
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href) ?? false;
   };
 
   const filterByPermission = (items: NavItem[]) => {

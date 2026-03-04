@@ -39,11 +39,12 @@ export function ResponseVariants({
   className,
   compact = false,
 }: ResponseVariantsProps) {
-  const options: Array<{ type: ResponseType; content: string | null }> = [
+  const allOptions: Array<{ type: ResponseType; content: string | null }> = [
     { type: 'value_first', content: responses.valueFirst },
     { type: 'soft_cta', content: responses.softCta },
     { type: 'contextual', content: responses.contextual },
-  ].filter((opt) => opt.content);
+  ];
+  const options = allOptions.filter((opt) => opt.content);
 
   if (options.length === 0) {
     return null;

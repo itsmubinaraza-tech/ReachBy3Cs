@@ -246,7 +246,7 @@ export function ClusterPagination({
         </svg>
       </button>
 
-      {visiblePages[0] > 1 && (
+      {(visiblePages[0] ?? 1) > 1 && (
         <>
           <button
             onClick={() => onPageChange(1)}
@@ -254,7 +254,7 @@ export function ClusterPagination({
           >
             1
           </button>
-          {visiblePages[0] > 2 && (
+          {(visiblePages[0] ?? 1) > 2 && (
             <span className="text-gray-400">...</span>
           )}
         </>
@@ -275,9 +275,9 @@ export function ClusterPagination({
         </button>
       ))}
 
-      {visiblePages[visiblePages.length - 1] < totalPages && (
+      {(visiblePages[visiblePages.length - 1] ?? totalPages) < totalPages && (
         <>
-          {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
+          {(visiblePages[visiblePages.length - 1] ?? totalPages) < totalPages - 1 && (
             <span className="text-gray-400">...</span>
           )}
           <button

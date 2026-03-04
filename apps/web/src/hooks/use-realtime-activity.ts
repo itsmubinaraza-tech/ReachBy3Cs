@@ -20,8 +20,8 @@ function generateMockActivity(): ActivityItem {
   const platforms = ['reddit', 'twitter', 'quora', 'linkedin', 'google'];
   const users = ['John', 'Sarah', 'Mike', 'Emma', undefined];
 
-  const type = types[Math.floor(Math.random() * types.length)];
-  const platform = platforms[Math.floor(Math.random() * platforms.length)];
+  const type = types[Math.floor(Math.random() * types.length)] ?? 'detected';
+  const platform = platforms[Math.floor(Math.random() * platforms.length)] ?? 'reddit';
   const user = users[Math.floor(Math.random() * users.length)];
 
   const descriptions: Record<ActivityItem['type'], string> = {
@@ -38,7 +38,7 @@ function generateMockActivity(): ActivityItem {
     id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,
     platform,
-    description: descriptions[type] || `Activity: ${type}`,
+    description: descriptions[type],
     timestamp: new Date().toISOString(),
     user,
   };

@@ -114,7 +114,7 @@ export function useDashboardStats(): UseDashboardStatsResult {
       const { count: pendingCount2, error: pendingError2 } = await supabase
         .from('engagement_queue')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organization.id)
+        .eq('organization_id', organization?.id ?? '')
         .eq('status', 'queued');
 
       if (pendingError2) throw pendingError2;

@@ -61,18 +61,18 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
 
   // Parse filters from URL params
   const filters: QueueFilters = useMemo(() => ({
-    status: (searchParams.get('status') as ResponseStatus) || 'pending',
-    riskLevel: searchParams.get('riskLevel') as RiskLevel | undefined,
-    platformId: searchParams.get('platformId') || undefined,
-    minCtsScore: searchParams.get('minCts') ? parseFloat(searchParams.get('minCts')!) : undefined,
-    maxCtsScore: searchParams.get('maxCts') ? parseFloat(searchParams.get('maxCts')!) : undefined,
-    dateFrom: searchParams.get('dateFrom') || undefined,
-    dateTo: searchParams.get('dateTo') || undefined,
+    status: (searchParams?.get('status') as ResponseStatus) || 'pending',
+    riskLevel: searchParams?.get('riskLevel') as RiskLevel | undefined,
+    platformId: searchParams?.get('platformId') || undefined,
+    minCtsScore: searchParams?.get('minCts') ? parseFloat(searchParams.get('minCts')!) : undefined,
+    maxCtsScore: searchParams?.get('maxCts') ? parseFloat(searchParams.get('maxCts')!) : undefined,
+    dateFrom: searchParams?.get('dateFrom') || undefined,
+    dateTo: searchParams?.get('dateTo') || undefined,
   }), [searchParams]);
 
   // Update URL params when filters change
   const setFilters = useCallback((newFilters: Partial<QueueFilters>) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
 
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -254,7 +254,7 @@ export function useQueue(options: UseQueueOptions = {}): UseQueueResult {
             detectedAt: post?.detected_at || item.created_at,
           },
           analysis: {
-            problemCategory: undefined,
+            problemCategory: null,
             emotionalIntensity: signal?.emotional_intensity || 0.5,
             keywords: signal?.keywords || [],
             riskLevel: 'medium' as const,

@@ -62,7 +62,7 @@ export function useOnboarding() {
       '/onboarding/complete',
     ];
 
-    const path = stepPaths[status.currentStep - 1] || stepPaths[0];
+    const path = stepPaths[status.currentStep - 1] ?? stepPaths[0] ?? '/onboarding';
     router.push(path);
   }, [status, router]);
 

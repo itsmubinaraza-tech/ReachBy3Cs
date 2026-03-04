@@ -31,7 +31,7 @@ export function useOrganizationSettings() {
   const getProfileData = useCallback((): OrganizationProfileData | null => {
     if (!organization || !settings) return null;
 
-    const settingsObj = settings as Record<string, unknown>;
+    const settingsObj = settings as unknown as Record<string, unknown>;
 
     return {
       name: organization.name,
@@ -46,7 +46,7 @@ export function useOrganizationSettings() {
   const getAutomationSettings = useCallback((): AutomationSettingsData | null => {
     if (!settings) return null;
 
-    const settingsObj = settings as Record<string, unknown>;
+    const settingsObj = settings as unknown as Record<string, unknown>;
 
     return {
       enabled: (settingsObj.auto_post_enabled as boolean) || false,
