@@ -5,7 +5,7 @@
 
 export interface PreviewQueueItem {
   id: string;
-  platform: 'reddit' | 'quora' | 'twitter' | 'linkedin';
+  platform: 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews';
   title: string;
   content: string;
   response: string;

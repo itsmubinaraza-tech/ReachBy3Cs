@@ -73,11 +73,13 @@ function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
   });
 }
 
-function detectPlatform(url: string): 'reddit' | 'quora' | 'twitter' | 'linkedin' {
+function detectPlatform(url: string): 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews' {
   if (url.includes('reddit.com')) return 'reddit';
   if (url.includes('quora.com')) return 'quora';
   if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
   if (url.includes('linkedin.com')) return 'linkedin';
+  if (url.includes('stackoverflow.com')) return 'stackoverflow';
+  if (url.includes('ycombinator.com') || url.includes('news.ycombinator.com')) return 'hackernews';
   return 'reddit'; // Default
 }
 
@@ -120,10 +122,10 @@ export function useLandingSearch(): UseLandingSearchResult {
         throw new Error('Please provide more details about your target audience');
       }
 
-      // Search for discussions on Reddit and Quora
+      // Search for discussions on multiple platforms
       const crawlResult = await agentClient.searchDiscussions(
         keywords,
-        ['reddit', 'quora'],
+        ['reddit.com', 'quora.com', 'stackoverflow.com', 'news.ycombinator.com'],
         10
       );
 

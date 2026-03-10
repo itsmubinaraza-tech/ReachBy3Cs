@@ -15,6 +15,8 @@ const platformColors = {
   quora: { bg: 'bg-red-100', text: 'text-red-600', letter: 'Q' },
   twitter: { bg: 'bg-blue-100', text: 'text-blue-600', letter: 'X' },
   linkedin: { bg: 'bg-blue-100', text: 'text-blue-700', letter: 'in' },
+  stackoverflow: { bg: 'bg-orange-100', text: 'text-orange-700', letter: 'SO' },
+  hackernews: { bg: 'bg-orange-100', text: 'text-orange-500', letter: 'HN' },
 };
 
 export function PreviewQueueItemCard({
