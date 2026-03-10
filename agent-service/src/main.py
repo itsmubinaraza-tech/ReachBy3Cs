@@ -94,6 +94,8 @@ def create_app() -> FastAPI:
     # Configure CORS - allow web app origins
     allowed_origins = [
         "http://localhost:3000",
+        "https://reachby3cs.com",
+        "https://www.reachby3cs.com",
         "https://reachby3cs.vercel.app",
         "https://*.vercel.app",
     ]

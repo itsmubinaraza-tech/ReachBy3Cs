@@ -8,13 +8,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Needs-Matched Engagement Platform',
-  description: 'AI-powered engagement platform for meaningful conversations',
+  title: 'ReachBy3Cs - Communicate. Connect. Community.',
+  description: 'AI-powered engagement platform that finds high-intent conversations and helps you respond authentically.',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Engagement Platform',
+  icons: {
+    icon: '/favicon.ico',
   },
 };
 
