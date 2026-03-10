@@ -53,27 +53,34 @@ function extractKeywords(text: string): string[] {
  * Transform crawl result posts to preview queue items
  */
 function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
-  return crawlResult.posts.map((post, index) => {
-    const platform = detectPlatform(post.url);
-    return {
-      id: post.id || `search-${index}`,
-      platform,
-      title: post.title || 'Untitled Discussion',
-      content: post.content || '',
-      response: '', // Will be generated on demand
-      author: post.author || 'anonymous',
-      url: post.url,
-      subreddit: platform === 'reddit' ? extractSubreddit(post.url) : undefined,
-      createdAt: formatRelativeTime(post.created_at),
-      engagement: {
-        upvotes: post.engagement?.upvotes,
-        comments: post.engagement?.comments,
-      },
-    };
-  });
+  if (!crawlResult?.posts || !Array.isArray(crawlResult.posts)) {
+    return [];
+  }
+
+  return crawlResult.posts
+    .filter((post) => post && post.url) // Filter out posts without URLs
+    .map((post, index) => {
+      const platform = detectPlatform(post.url);
+      return {
+        id: post.id || `search-${index}`,
+        platform,
+        title: post.title || 'Untitled Discussion',
+        content: post.content || '',
+        response: '', // Will be generated on demand
+        author: post.author || 'anonymous',
+        url: post.url,
+        subreddit: platform === 'reddit' ? extractSubreddit(post.url) : undefined,
+        createdAt: formatRelativeTime(post.created_at),
+        engagement: {
+          upvotes: post.engagement?.upvotes,
+          comments: post.engagement?.comments,
+        },
+      };
+    });
 }
 
-function detectPlatform(url: string): 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews' {
+function detectPlatform(url: string | undefined | null): 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews' {
+  if (!url) return 'reddit'; // Default for missing URLs
   if (url.includes('reddit.com')) return 'reddit';
   if (url.includes('quora.com')) return 'quora';
   if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
@@ -83,7 +90,8 @@ function detectPlatform(url: string): 'reddit' | 'quora' | 'twitter' | 'linkedin
   return 'reddit'; // Default
 }
 
-function extractSubreddit(url: string): string | undefined {
+function extractSubreddit(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
   const match = url.match(/reddit\.com\/r\/([^/]+)/);
   return match ? `r/${match[1]}` : undefined;
 }
@@ -134,8 +142,10 @@ export function useLandingSearch(): UseLandingSearchResult {
       setResults(queueItems);
       setHasSearched(true);
     } catch (err) {
+      console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
       setResults([]);
+      setHasSearched(true); // Mark as searched even on error to not show mock data
     } finally {
       setIsSearching(false);
     }

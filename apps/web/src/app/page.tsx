@@ -51,8 +51,11 @@ export default function LandingPage() {
     }
   };
 
-  // Use search results if available, otherwise mock data
-  const previewItems = hasSearched ? results : mockPreviewQueueItems;
+  // Use search results if available, otherwise mock data for initial preview
+  // Show empty state if search returned no results
+  const previewItems = hasSearched
+    ? results
+    : mockPreviewQueueItems;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
