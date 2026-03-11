@@ -16,17 +16,23 @@ interface SearchRequest {
 interface CrawlResult {
   platform: string;
   posts: Array<{
-    id: string;
+    external_id: string;
     platform: string;
-    url: string;
-    title: string;
+    external_url: string;
     content: string;
-    author: string;
-    created_at: string;
-    engagement: {
+    author_handle?: string;
+    author_display_name?: string;
+    external_created_at?: string;
+    crawled_at: string;
+    engagement_metrics: {
       upvotes?: number;
       comments?: number;
       shares?: number;
+    };
+    platform_metadata?: {
+      source_platform?: string;
+      position?: number;
+      displayed_link?: string;
     };
   }>;
   total_found: number;

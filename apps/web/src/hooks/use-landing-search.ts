@@ -58,22 +58,28 @@ function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
   }
 
   return crawlResult.posts
-    .filter((post) => post && post.url) // Filter out posts without URLs
+    .filter((post) => post && post.external_url) // Filter out posts without URLs
     .map((post, index) => {
-      const platform = detectPlatform(post.url);
+      const url = post.external_url;
+      const platform = detectPlatform(url);
+
+      // Extract title from content (first line or first 100 chars)
+      const contentLines = (post.content || '').split('\n');
+      const title = contentLines[0]?.slice(0, 100) || 'Untitled Discussion';
+
       return {
-        id: post.id || `search-${index}`,
+        id: post.external_id || `search-${index}`,
         platform,
-        title: post.title || 'Untitled Discussion',
+        title,
         content: post.content || '',
         response: '', // Will be generated on demand
-        author: post.author || 'anonymous',
-        url: post.url,
-        subreddit: platform === 'reddit' ? extractSubreddit(post.url) : undefined,
-        createdAt: formatRelativeTime(post.created_at),
+        author: post.author_handle || post.author_display_name || 'anonymous',
+        url,
+        subreddit: platform === 'reddit' ? extractSubreddit(url) : undefined,
+        createdAt: formatRelativeTime(post.crawled_at || post.external_created_at || ''),
         engagement: {
-          upvotes: post.engagement?.upvotes,
-          comments: post.engagement?.comments,
+          upvotes: post.engagement_metrics?.upvotes,
+          comments: post.engagement_metrics?.comments,
         },
       };
     });
