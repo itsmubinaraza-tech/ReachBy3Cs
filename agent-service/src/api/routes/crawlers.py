@@ -18,6 +18,7 @@ from src.crawlers.scheduler import (
     CrawlScheduler,
     get_scheduler,
 )
+from src.crawlers.ai_search import generate_search_queries
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,26 @@ class GoogleSearchRequest(SearchRequest):
     include_related_questions: bool = Field(
         default=True, description="Include 'People Also Ask' questions"
     )
+
+
+class AISearchRequest(BaseModel):
+    """Request model for AI-powered search."""
+
+    target_audience: str = Field(
+        ...,
+        description="Description of who you want to reach",
+        min_length=10,
+    )
+    solution: str = Field(
+        ...,
+        description="Description of the problem you solve",
+        min_length=5,
+    )
+    platforms: list[str] | None = Field(
+        default=None,
+        description="Platforms to search (reddit.com, quora.com, etc.)"
+    )
+    limit: int = Field(default=10, ge=1, le=50, description="Maximum results")
 
 
 class ScheduleRequest(BaseModel):
@@ -345,6 +366,92 @@ async def search_discussions(
     )
 
     return crawl_result_to_response(result)
+
+
+@router.post(
+    "/google/ai-search",
+    response_model=CrawlResultResponse,
+    summary="AI-Powered Search",
+    description="Use AI to generate optimal search queries and find relevant discussions.",
+)
+async def ai_search(request: AISearchRequest) -> CrawlResultResponse:
+    """AI-powered search that generates optimal queries from natural language.
+
+    Instead of requiring specific keywords, this endpoint:
+    1. Takes a natural language description of the target audience
+    2. Uses AI to generate multiple optimized search queries
+    3. Searches across platforms with those queries
+    4. Returns combined, deduplicated results
+    """
+    # Generate AI-optimized search queries
+    queries = await generate_search_queries(
+        target_audience=request.target_audience,
+        solution=request.solution,
+        num_queries=5,
+    )
+
+    logger.info(f"AI generated queries: {queries}")
+
+    if not queries:
+        return CrawlResultResponse(
+            platform="google",
+            posts=[],
+            total_found=0,
+            crawl_time_seconds=0,
+            errors=["Failed to generate search queries"],
+            rate_limited=False,
+        )
+
+    # Get the Google crawler
+    crawler = await get_crawler("google")
+
+    # Default platforms if not specified
+    platforms = request.platforms or [
+        "reddit.com",
+        "stackoverflow.com",
+        "news.ycombinator.com",
+    ]
+
+    # Search with each query and combine results
+    all_posts: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+    total_errors: list[str] = []
+    total_time = 0.0
+    rate_limited = False
+
+    for query in queries:
+        try:
+            result = await crawler.search_discussions(
+                keywords=[query],
+                platforms=platforms,
+                limit=request.limit // len(queries) + 2,  # Distribute limit across queries
+            )
+
+            total_time += result.crawl_time_seconds
+            rate_limited = rate_limited or result.rate_limited
+            total_errors.extend(result.errors)
+
+            # Deduplicate by URL
+            for post in result.posts:
+                if post.url not in seen_urls:
+                    seen_urls.add(post.url)
+                    all_posts.append(post.model_dump())
+
+                    if len(all_posts) >= request.limit:
+                        break
+
+        except Exception as e:
+            logger.error(f"Error searching with query '{query}': {e}")
+            total_errors.append(f"Query '{query}' failed: {str(e)}")
+
+    return CrawlResultResponse(
+        platform="google",
+        posts=all_posts[:request.limit],
+        total_found=len(all_posts),
+        crawl_time_seconds=total_time,
+        errors=total_errors,
+        rate_limited=rate_limited,
+    )
 
 
 # Status Endpoints

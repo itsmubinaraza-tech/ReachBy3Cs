@@ -131,6 +131,26 @@ class AgentServiceClient {
   }
 
   /**
+   * AI-powered search that generates optimal queries from natural language
+   */
+  async aiSearch(
+    targetAudience: string,
+    solution: string,
+    platforms?: string[],
+    limit?: number
+  ): Promise<CrawlResult> {
+    return this.fetch<CrawlResult>('/crawlers/google/ai-search', {
+      method: 'POST',
+      body: JSON.stringify({
+        target_audience: targetAudience,
+        solution: solution,
+        platforms,
+        limit,
+      }),
+    });
+  }
+
+  /**
    * Schedule a recurring crawl
    */
   async scheduleCrawl(request: ScheduleRequest): Promise<{ job_id: string; message: string; next_run: string | null }> {

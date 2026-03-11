@@ -123,22 +123,30 @@ export function useLandingSearch(): UseLandingSearchResult {
     setError(null);
 
     try {
-      // Extract keywords from the target audience description
-      const keywords = extractKeywords(data.targetAudience);
-
-      if (keywords.length === 0) {
-        throw new Error('Please provide more details about your target audience');
+      // Validate input
+      if (!data.targetAudience || data.targetAudience.trim().length < 10) {
+        throw new Error('Please provide more details about your target audience (at least 10 characters)');
       }
 
-      // Search for discussions on multiple platforms
-      const crawlResult = await agentClient.searchDiscussions(
-        keywords,
-        ['reddit.com', 'quora.com', 'stackoverflow.com', 'news.ycombinator.com'],
+      if (!data.solution || data.solution.trim().length < 5) {
+        throw new Error('Please describe your solution (at least 5 characters)');
+      }
+
+      // Use AI-powered search for better results
+      const crawlResult = await agentClient.aiSearch(
+        data.targetAudience.trim(),
+        data.solution.trim(),
+        ['reddit.com', 'stackoverflow.com', 'news.ycombinator.com'],
         10
       );
 
       // Transform to queue items
       const queueItems = transformToQueueItems(crawlResult);
+
+      if (queueItems.length === 0) {
+        setError('No conversations found. Try being more specific about the problem you solve.');
+      }
+
       setResults(queueItems);
       setHasSearched(true);
     } catch (err) {
