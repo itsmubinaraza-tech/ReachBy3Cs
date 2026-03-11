@@ -17,6 +17,14 @@ export interface PreviewQueueItem {
     upvotes?: number;
     comments?: number;
   };
+  // AI-generated fields (optional for backwards compatibility)
+  responseVariants?: {
+    value_first: string;
+    soft_cta: string;
+    contextual: string;
+  };
+  riskLevel?: 'low' | 'medium' | 'high' | 'blocked';
+  ctsScore?: number;
 }
 
 export interface PreviewActivity {

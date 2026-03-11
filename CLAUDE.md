@@ -269,7 +269,7 @@ TWITTER_ACCESS_SECRET=xxx
 6. Mark task complete only when ALL tests pass
 7. Do NOT proceed to next feature until current feature is fully tested
 
-## Implementation Progress (Updated: 2026-03-04)
+## Implementation Progress (Updated: 2026-03-10)
 
 ### Phase 1: Foundation - COMPLETE
 - [x] Feature 1: Project Setup & Infrastructure
@@ -315,6 +315,11 @@ TWITTER_ACCESS_SECRET=xxx
 - [x] Feature 7: ProjectRepository & ProjectSearchConfigRepository (api-client)
 - [x] Feature 8: QueueCountContext for real-time navigation badges
 - [x] Feature 9: TypeScript strict null checks fixes
+- [x] Feature 10: AI Response Generation on Landing Page Search (NEW - 2026-03-10)
+  - Added `/crawlers/google/ai-search-with-responses` endpoint
+  - Landing page search now returns posts WITH AI-drafted responses
+  - Parallel processing of posts through full AI pipeline
+  - Sales agents can copy/edit AI responses directly
 
 ### Previously Completed
 - [x] Landing Page: ReachBy3Cs branding with 3Cs sections
@@ -393,6 +398,13 @@ Run `npm run dev` and visit http://localhost:3000 to see:
 - `apps/web/src/app/page.tsx` - Landing page with 3Cs branding
 - `apps/web/src/hooks/use-trial.ts` - Trial tracking hook
 - `apps/web/src/components/trial/trial-banner.tsx` - Trial status banner
+
+### Landing Page AI Search (Updated 2026-03-10)
+- `apps/web/src/hooks/use-landing-search.ts` - Landing search hook (uses AI search with responses)
+- `apps/web/src/lib/agent/client.ts` - Agent service client (`aiSearchWithResponses()` method)
+- `apps/web/src/lib/landing/mock-preview-data.ts` - PreviewQueueItem type with AI response fields
+- `apps/web/src/components/landing/preview-queue-item.tsx` - Preview card showing AI responses
+- `agent-service/src/api/routes/crawlers.py` - `/ai-search-with-responses` endpoint
 
 ### Database
 - `supabase/migrations/20260213000001_initial_schema.sql` - Full schema
@@ -480,6 +492,29 @@ POST /crawlers/google/discussions?limit=10
   "keywords": ["search terms"],
   "platforms": ["reddit", "quora"]  # Optional filter
 }
+
+# AI-powered search with response generation (NEW - Landing Page)
+POST /crawlers/google/ai-search-with-responses
+{
+  "target_audience": "families needing financial support",
+  "solution": "website that helps find resources",
+  "platforms": ["reddit.com", "stackoverflow.com"],
+  "limit": 5
+}
+# Returns posts WITH AI-generated responses:
+# {
+#   "posts": [{
+#     "external_id": "...",
+#     "content": "Post text...",
+#     "ai_response": "AI-drafted response ready to copy",
+#     "response_variants": { "value_first": "...", "soft_cta": "...", "contextual": "..." },
+#     "risk_level": "low",
+#     "cts_score": 0.85
+#   }],
+#   "total_found": 5,
+#   "crawl_time_seconds": 2.5,
+#   "pipeline_time_seconds": 4.2
+# }
 ```
 
 #### Pipeline (Full AI Processing)

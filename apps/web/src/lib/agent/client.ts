@@ -49,6 +49,46 @@ interface HealthResponse {
   timestamp: string;
 }
 
+interface EnhancedPost {
+  external_id: string;
+  external_url: string;
+  content: string;
+  platform: string;
+  author_handle?: string;
+  author_display_name?: string;
+  external_created_at?: string;
+  crawled_at: string;
+  engagement_metrics: {
+    upvotes?: number;
+    comments?: number;
+    shares?: number;
+  };
+  platform_metadata?: {
+    source_platform?: string;
+    position?: number;
+    displayed_link?: string;
+  };
+  // AI-generated fields
+  ai_response: string;
+  response_variants: {
+    value_first: string;
+    soft_cta: string;
+    contextual: string;
+  };
+  risk_level: 'low' | 'medium' | 'high' | 'blocked';
+  cts_score: number;
+  error?: string;
+}
+
+interface AISearchWithResponsesResult {
+  posts: EnhancedPost[];
+  total_found: number;
+  crawl_time_seconds: number;
+  pipeline_time_seconds: number;
+  errors: string[];
+  rate_limited: boolean;
+}
+
 interface ScheduleRequest {
   name: string;
   platform: string;
@@ -157,6 +197,28 @@ class AgentServiceClient {
   }
 
   /**
+   * AI-powered search that generates optimal queries AND AI responses for each post.
+   * Returns posts with AI-drafted responses ready for sales agents.
+   */
+  async aiSearchWithResponses(
+    targetAudience: string,
+    solution: string,
+    platforms?: string[],
+    limit?: number
+  ): Promise<AISearchWithResponsesResult> {
+    return this.fetch<AISearchWithResponsesResult>('/crawlers/google/ai-search-with-responses', {
+      method: 'POST',
+      body: JSON.stringify({
+        target_audience: targetAudience,
+        solution: solution,
+        platforms,
+        limit,
+        generate_responses: true,
+      }),
+    });
+  }
+
+  /**
    * Schedule a recurring crawl
    */
   async scheduleCrawl(request: ScheduleRequest): Promise<{ job_id: string; message: string; next_run: string | null }> {
@@ -215,4 +277,11 @@ export const agentClient = new AgentServiceClient();
 
 // Export class for custom instances
 export { AgentServiceClient };
-export type { SearchRequest, CrawlResult, HealthResponse, ScheduleRequest };
+export type {
+  SearchRequest,
+  CrawlResult,
+  HealthResponse,
+  ScheduleRequest,
+  EnhancedPost,
+  AISearchWithResponsesResult,
+};

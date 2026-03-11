@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { agentClient, CrawlResult } from '@/lib/agent/client';
+import { agentClient, AISearchWithResponsesResult, EnhancedPost } from '@/lib/agent/client';
 import { PreviewQueueItem } from '@/lib/landing/mock-preview-data';
 
 export interface SearchFormData {
@@ -19,47 +19,16 @@ export interface UseLandingSearchResult {
 }
 
 /**
- * Extract keywords from target audience description
- * Simple keyword extraction - takes key phrases and removes common words
+ * Transform AI search result posts to preview queue items
  */
-function extractKeywords(text: string): string[] {
-  const stopWords = new Set([
-    'i', 'me', 'my', 'we', 'our', 'you', 'your', 'the', 'a', 'an', 'and', 'or',
-    'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was',
-    'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
-    'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall', 'can',
-    'need', 'dare', 'ought', 'used', 'that', 'this', 'these', 'those', 'who',
-    'which', 'what', 'where', 'when', 'why', 'how', 'all', 'each', 'every',
-    'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'not', 'only',
-    'same', 'so', 'than', 'too', 'very', 'just', 'also', 'now', 'here', 'there',
-    'then', 'if', 'about', 'into', 'through', 'during', 'before', 'after',
-    'above', 'below', 'from', 'up', 'down', 'out', 'off', 'over', 'under',
-    'again', 'further', 'once', 'trying', 'problem', 'solve', 'help', 'looking',
-  ]);
-
-  // Extract words, filter stopwords, and take top keywords
-  const words = text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
-    .filter((word) => word.length > 2 && !stopWords.has(word));
-
-  // Get unique words and take top 5-7 for search
-  const uniqueWords = [...new Set(words)];
-  return uniqueWords.slice(0, 7);
-}
-
-/**
- * Transform crawl result posts to preview queue items
- */
-function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
-  if (!crawlResult?.posts || !Array.isArray(crawlResult.posts)) {
+function transformToQueueItems(result: AISearchWithResponsesResult): PreviewQueueItem[] {
+  if (!result?.posts || !Array.isArray(result.posts)) {
     return [];
   }
 
-  return crawlResult.posts
+  return result.posts
     .filter((post) => post && post.external_url) // Filter out posts without URLs
-    .map((post, index) => {
+    .map((post: EnhancedPost, index) => {
       const url = post.external_url;
       const platform = detectPlatform(url);
 
@@ -72,7 +41,7 @@ function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
         platform,
         title,
         content: post.content || '',
-        response: '', // Will be generated on demand
+        response: post.ai_response || '', // AI-generated response
         author: post.author_handle || post.author_display_name || 'anonymous',
         url,
         subreddit: platform === 'reddit' ? extractSubreddit(url) : undefined,
@@ -81,6 +50,10 @@ function transformToQueueItems(crawlResult: CrawlResult): PreviewQueueItem[] {
           upvotes: post.engagement_metrics?.upvotes,
           comments: post.engagement_metrics?.comments,
         },
+        // Include AI analysis data
+        responseVariants: post.response_variants,
+        riskLevel: post.risk_level,
+        ctsScore: post.cts_score,
       };
     });
 }
@@ -138,16 +111,17 @@ export function useLandingSearch(): UseLandingSearchResult {
         throw new Error('Please describe your solution (at least 5 characters)');
       }
 
-      // Use AI-powered search for better results
-      const crawlResult = await agentClient.aiSearch(
+      // Use AI-powered search WITH response generation for better results
+      // This returns posts with AI-drafted responses ready for sales agents
+      const searchResult = await agentClient.aiSearchWithResponses(
         data.targetAudience.trim(),
         data.solution.trim(),
         ['reddit.com', 'stackoverflow.com', 'news.ycombinator.com'],
-        10
+        5 // Limit to 5 for faster response generation
       );
 
-      // Transform to queue items
-      const queueItems = transformToQueueItems(crawlResult);
+      // Transform to queue items (now includes AI responses)
+      const queueItems = transformToQueueItems(searchResult);
 
       if (queueItems.length === 0) {
         setError('No conversations found. Try being more specific about the problem you solve.');

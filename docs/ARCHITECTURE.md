@@ -1412,6 +1412,11 @@ This section details where AI agents and skills are involved throughout the syst
     │  POST /crawl/trigger        →  Trigger manual crawl                                 │
     │  GET  /crawl/status         →  Get crawler status                                   │
     │                                                                                      │
+    │  POST /crawlers/google/ai-search-with-responses                                      │
+    │       Body: { target_audience, solution, platforms[], limit }                        │
+    │       → Search + generate AI responses for each post (parallel pipeline)            │
+    │       → Returns: posts with ai_response, response_variants, risk_level, cts_score   │
+    │                                                                                      │
     │  POST /cluster/update       →  Trigger clustering update                            │
     │                                                                                      │
     │  POST /post/submit          →  Submit response for posting                          │

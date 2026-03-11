@@ -4,7 +4,9 @@ This module provides REST API endpoints for managing and executing
 crawls across different platforms.
 """
 
+import asyncio
 import logging
+import time
 from datetime import datetime
 from typing import Any
 
@@ -104,6 +106,52 @@ class AISearchRequest(BaseModel):
         description="Platforms to search (reddit.com, quora.com, etc.)"
     )
     limit: int = Field(default=10, ge=1, le=50, description="Maximum results")
+
+
+class AISearchWithResponsesRequest(AISearchRequest):
+    """Request model for AI-powered search with response generation."""
+
+    generate_responses: bool = Field(
+        default=True,
+        description="Whether to generate AI responses for each post"
+    )
+    skip_cta_cts: bool = Field(
+        default=False,
+        description="Skip CTA classifier and CTS decision for faster processing"
+    )
+
+
+class EnhancedPost(BaseModel):
+    """A post with AI-generated response data."""
+
+    external_id: str
+    external_url: str
+    content: str
+    platform: str
+    author_handle: str | None = None
+    author_display_name: str | None = None
+    external_created_at: str | None = None
+    crawled_at: str
+    engagement_metrics: dict[str, Any] = Field(default_factory=dict)
+    platform_metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # AI-generated fields
+    ai_response: str = ""
+    response_variants: dict[str, str] = Field(default_factory=dict)
+    risk_level: str = "medium"
+    cts_score: float = 0.5
+    error: str | None = None
+
+
+class AISearchWithResponsesResponse(BaseModel):
+    """Response model for AI search with responses."""
+
+    posts: list[EnhancedPost]
+    total_found: int
+    crawl_time_seconds: float
+    pipeline_time_seconds: float
+    errors: list[str]
+    rate_limited: bool
 
 
 class ScheduleRequest(BaseModel):
@@ -452,6 +500,173 @@ async def ai_search(request: AISearchRequest) -> CrawlResultResponse:
         crawl_time_seconds=total_time,
         errors=total_errors,
         rate_limited=rate_limited,
+    )
+
+
+def _detect_platform_from_url(url: str) -> str:
+    """Detect the platform from a URL.
+
+    Args:
+        url: The URL to analyze.
+
+    Returns:
+        Platform name (reddit, twitter, quora, etc.)
+    """
+    url_lower = url.lower()
+    if "reddit.com" in url_lower:
+        return "reddit"
+    elif "twitter.com" in url_lower or "x.com" in url_lower:
+        return "twitter"
+    elif "quora.com" in url_lower:
+        return "quora"
+    elif "stackoverflow.com" in url_lower:
+        return "stackoverflow"
+    elif "ycombinator.com" in url_lower:
+        return "hackernews"
+    elif "linkedin.com" in url_lower:
+        return "linkedin"
+    return "reddit"  # Default
+
+
+@router.post(
+    "/google/ai-search-with-responses",
+    response_model=AISearchWithResponsesResponse,
+    summary="AI Search with Response Generation",
+    description="Search for discussions and generate AI responses for each result.",
+)
+async def ai_search_with_responses(
+    request: AISearchWithResponsesRequest,
+) -> AISearchWithResponsesResponse:
+    """AI-powered search that also generates responses for each result.
+
+    This endpoint combines:
+    1. AI-powered search query generation
+    2. SerpAPI search for discussions
+    3. AI pipeline processing for each post (signal detection, risk scoring, response generation)
+
+    Returns posts with AI-generated responses ready for sales agents to copy/edit.
+    """
+    from src.agents.engagement_pipeline import create_engagement_pipeline
+
+    pipeline_start = time.time()
+
+    # Step 1: Run the AI search (reuse existing logic)
+    search_result = await ai_search(
+        AISearchRequest(
+            target_audience=request.target_audience,
+            solution=request.solution,
+            platforms=request.platforms,
+            limit=request.limit,
+        )
+    )
+
+    crawl_time = search_result.crawl_time_seconds
+
+    # If no posts found, return early
+    if not search_result.posts:
+        return AISearchWithResponsesResponse(
+            posts=[],
+            total_found=0,
+            crawl_time_seconds=crawl_time,
+            pipeline_time_seconds=0,
+            errors=search_result.errors,
+            rate_limited=search_result.rate_limited,
+        )
+
+    # Step 2: Create pipeline and tenant context
+    pipeline = create_engagement_pipeline()
+
+    tenant_context = {
+        "app_name": request.solution[:50] if request.solution else "Solution",
+        "value_prop": request.solution,
+        "target_audience": request.target_audience,
+        "key_benefits": [],
+        "website_url": "",
+    }
+
+    # Step 3: Process each post through the pipeline in parallel
+    async def process_post(post: dict[str, Any]) -> EnhancedPost:
+        """Process a single post through the engagement pipeline."""
+        content = post.get("content", "")
+        url = post.get("external_url", "")
+        platform = _detect_platform_from_url(url)
+
+        # Create base enhanced post
+        enhanced = EnhancedPost(
+            external_id=post.get("external_id", ""),
+            external_url=url,
+            content=content,
+            platform=platform,
+            author_handle=post.get("author_handle"),
+            author_display_name=post.get("author_display_name"),
+            external_created_at=post.get("external_created_at"),
+            crawled_at=post.get("crawled_at", datetime.utcnow().isoformat()),
+            engagement_metrics=post.get("engagement_metrics", {}),
+            platform_metadata=post.get("platform_metadata", {}),
+        )
+
+        # Skip if no content
+        if not content or len(content.strip()) < 10:
+            enhanced.error = "Insufficient content for analysis"
+            return enhanced
+
+        try:
+            # Run pipeline with timeout (10 seconds per post)
+            result = await asyncio.wait_for(
+                pipeline.run_async(
+                    text=content,
+                    platform=platform,
+                    tenant_context=tenant_context,
+                ),
+                timeout=15.0,
+            )
+
+            # Extract response data
+            responses = result.get("responses") or {}
+            risk = result.get("risk") or {}
+            cts = result.get("cts") or {}
+
+            enhanced.ai_response = responses.get("selected_response", "")
+            enhanced.response_variants = {
+                "value_first": responses.get("value_first_response", ""),
+                "soft_cta": responses.get("soft_cta_response", ""),
+                "contextual": responses.get("contextual_response", ""),
+            }
+            enhanced.risk_level = risk.get("risk_level", "medium")
+            enhanced.cts_score = cts.get("cts_score", 0.5)
+
+            # Check for pipeline error
+            if result.get("error"):
+                enhanced.error = result.get("error")
+
+        except asyncio.TimeoutError:
+            logger.warning(f"Pipeline timeout for post: {url[:50]}...")
+            enhanced.error = "Pipeline processing timeout"
+        except Exception as e:
+            logger.error(f"Pipeline error for post {url[:50]}: {e}")
+            enhanced.error = str(e)
+
+        return enhanced
+
+    # Process all posts in parallel
+    tasks = [process_post(post) for post in search_result.posts]
+    enhanced_posts = await asyncio.gather(*tasks)
+
+    pipeline_time = time.time() - pipeline_start - crawl_time
+
+    # Collect any processing errors
+    all_errors = list(search_result.errors)
+    for post in enhanced_posts:
+        if post.error:
+            all_errors.append(f"Post {post.external_id}: {post.error}")
+
+    return AISearchWithResponsesResponse(
+        posts=enhanced_posts,
+        total_found=len(enhanced_posts),
+        crawl_time_seconds=crawl_time,
+        pipeline_time_seconds=round(pipeline_time, 2),
+        errors=all_errors,
+        rate_limited=search_result.rate_limited,
     )
 
 
