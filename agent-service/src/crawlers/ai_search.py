@@ -12,29 +12,33 @@ from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-SEARCH_QUERY_PROMPT = """You are an expert at finding online discussions and conversations.
+SEARCH_QUERY_PROMPT = """You are an expert at finding online discussions and conversations on Reddit and forums.
 
-Given a user's description of their target audience and what problem they solve, generate optimal search queries to find relevant discussions on Reddit, Stack Overflow, Quora, and Hacker News.
+Given a user's description of their target audience and what problem they solve, generate optimal Google search queries to find relevant discussions.
 
 User's Input:
 - Target Audience: {target_audience}
 - Solution/Product: {solution}
 
-Generate 3-5 different search queries that would find people:
-1. Discussing the problem the user solves
-2. Asking for recommendations or solutions
-3. Expressing frustration with existing alternatives
-4. Looking for help with related issues
+Generate 4 different search queries that would find people discussing this topic:
 
 Rules:
-- Each query should be 3-7 words
-- Focus on pain points and problems, not product names
-- Use natural language people would actually type
-- Include emotional keywords when relevant (frustrated, struggling, help, need, looking for)
-- Don't include site: filters - we handle that separately
+- Each query should be 2-5 words (shorter is better for Google)
+- Use broad, common terms people actually search for
+- Focus on the CORE problem, not specific solutions
+- Avoid jargon - use simple everyday language
+- Think about what someone would type into Google when frustrated
+
+Good examples:
+- "financial help for families" (broad, common)
+- "child support resources" (simple, direct)
+- "how to apply for benefits" (action-oriented)
+
+Bad examples:
+- "comprehensive financial assistance accumulator" (too specific/jargon)
+- "frustrated finding help for my child" (too emotional/long)
 
 Respond with ONLY a JSON array of search query strings, nothing else.
-Example: ["how to improve relationship communication", "couples therapy app recommendations", "frustrated with partner not listening"]
 """
 
 

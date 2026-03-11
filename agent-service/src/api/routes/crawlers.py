@@ -433,8 +433,9 @@ async def ai_search(request: AISearchRequest) -> CrawlResultResponse:
 
             # Deduplicate by URL
             for post in result.posts:
-                if post.url not in seen_urls:
-                    seen_urls.add(post.url)
+                post_url = post.external_url or ""
+                if post_url and post_url not in seen_urls:
+                    seen_urls.add(post_url)
                     all_posts.append(post.model_dump())
 
                     if len(all_posts) >= request.limit:
