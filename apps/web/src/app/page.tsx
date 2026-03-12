@@ -103,6 +103,7 @@ function LandingContent() {
               <a href="#features" className={`${textSecondary} hover:${textPrimary} transition`}>Features</a>
               <a href="#how-it-works" className={`${textSecondary} hover:${textPrimary} transition`}>How It Works</a>
               <Link href="/pricing" className={`${textSecondary} hover:${textPrimary} transition`}>Pricing</Link>
+              <Link href="/pitch" className={`${textSecondary} hover:${textPrimary} transition`}>Investors</Link>
             </div>
             <div className="flex items-center gap-3">
               <ThemeSwitcher />
@@ -277,6 +278,7 @@ function LandingContent() {
             <div className={`flex items-center gap-6 text-sm ${textMuted}`}>
               <a href="#" className={`hover:${textPrimary} transition`}>Privacy</a>
               <a href="#" className={`hover:${textPrimary} transition`}>Terms</a>
+              <Link href="/pitch" className={`hover:${textPrimary} transition`}>Investors</Link>
               <a href="#" className={`hover:${textPrimary} transition`}>Contact</a>
             </div>
             <p className={`${textMuted} text-sm`}>
