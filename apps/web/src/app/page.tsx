@@ -152,31 +152,29 @@ function LandingContent() {
       </nav>
 
       {/* Hero Section - First Screen */}
-      <section className="min-h-screen flex flex-col justify-center pt-14 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto w-full text-center">
-          {/* Problem Statement */}
+      <section className="min-h-screen flex items-center justify-center px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto w-full text-center">
+          {/* All content centered */}
           <div
             className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            {/* Line 1: Problem */}
+            {/* Problem statement */}
             <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-1`}>
               Your product solves a <span className={`${textPrimary} font-medium`}>real problem</span>.
             </p>
-
-            {/* Line 2: User awareness */}
-            <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-10`}>
+            <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-8 sm:mb-12`}>
               Your users don&apos;t even know it exists.
             </p>
 
-            {/* Animated tagline with context */}
-            <div className="mb-10">
-              <div className="flex flex-wrap items-center justify-center gap-x-3 text-2xl sm:text-3xl lg:text-4xl">
-                {/* Animated word */}
-                <div className="relative h-10 sm:h-12 w-[180px] sm:w-[220px] lg:w-[280px] inline-flex items-center justify-center overflow-hidden">
+            {/* Animated word + continuation - single flowing line */}
+            <div className="mb-8 sm:mb-12">
+              <div className="flex flex-wrap items-baseline justify-center gap-x-2 sm:gap-x-3">
+                {/* Large bold animated word */}
+                <div className="relative h-12 sm:h-16 lg:h-20 w-[200px] sm:w-[280px] lg:w-[340px] inline-flex items-center justify-center overflow-hidden">
                   {words.map((word, index) => (
                     <span
                       key={word}
-                      className={`absolute font-semibold transition-all duration-700 ease-in-out ${wordColors[index]} ${
+                      className={`absolute text-3xl sm:text-5xl lg:text-6xl font-bold transition-all duration-700 ease-in-out ${wordColors[index]} ${
                         currentWord === index
                           ? 'opacity-100 translate-y-0'
                           : 'opacity-0 translate-y-6'
@@ -186,9 +184,9 @@ function LandingContent() {
                     </span>
                   ))}
                 </div>
-                {/* Static text */}
-                <span className={textPrimary}>
-                  to the people who are talking about the problem you are solving.
+                {/* Continuation text - smaller */}
+                <span className={`text-lg sm:text-xl lg:text-2xl ${textSecondary}`}>
+                  to the people talking about the problem you&apos;re solving.
                 </span>
               </div>
             </div>
@@ -196,7 +194,7 @@ function LandingContent() {
 
           {/* CTA Buttons */}
           <div
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <Link
               href="/demo"
