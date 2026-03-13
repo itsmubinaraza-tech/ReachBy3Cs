@@ -673,6 +673,15 @@ async def ai_search_with_responses(
             url = post.get("external_url", "")
             platform = _detect_platform_from_url(url)
 
+            # Ensure crawled_at is a string (handle datetime objects)
+            crawled_at_val = post.get("crawled_at")
+            if crawled_at_val is None:
+                crawled_at_str = datetime.utcnow().isoformat()
+            elif isinstance(crawled_at_val, datetime):
+                crawled_at_str = crawled_at_val.isoformat()
+            else:
+                crawled_at_str = str(crawled_at_val)
+
             # Create base enhanced post
             enhanced = EnhancedPost(
                 external_id=post.get("external_id", ""),
@@ -682,7 +691,7 @@ async def ai_search_with_responses(
                 author_handle=post.get("author_handle"),
                 author_display_name=post.get("author_display_name"),
                 external_created_at=post.get("external_created_at"),
-                crawled_at=post.get("crawled_at", datetime.utcnow().isoformat()),
+                crawled_at=crawled_at_str,
                 engagement_metrics=post.get("engagement_metrics", {}),
                 platform_metadata=post.get("platform_metadata", {}),
             )
