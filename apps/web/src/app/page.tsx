@@ -9,9 +9,13 @@ import {
   Users,
   Zap,
   Play,
-  Sparkles,
   TrendingUp,
   ChevronDown,
+  BarChart3,
+  Shield,
+  Sparkles,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/landing/theme-switcher';
 import { ThemeProvider, useTheme } from '@/contexts/theme-context';
@@ -20,21 +24,13 @@ import { Logo } from '@/components/ui/logo';
 function LandingContent() {
   const router = useRouter();
   const { theme, colors } = useTheme();
-  const [currentWord, setCurrentWord] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-
-  // Animate words
-  const words = ['Communicate', 'Connect', 'Community'];
 
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setCurrentWord((prev) => (prev + 1) % 3);
-    }, 2000);
-    return () => clearInterval(interval);
   }, []);
 
-  const handleTryDemo = () => {
+  const handleViewDashboard = () => {
     const trialData = localStorage.getItem('reachby3cs_trial');
     const trial = trialData ? JSON.parse(trialData) : { uses: 0, startedAt: new Date().toISOString() };
 
@@ -61,6 +57,7 @@ function LandingContent() {
 
   const textPrimary = isDark ? 'text-white' : isEarthy ? 'text-amber-900' : isCalm ? 'text-teal-900' : 'text-gray-900';
   const textSecondary = isNeon ? 'text-purple-200' : isDark ? 'text-gray-400' : isEarthy ? 'text-amber-700' : isCalm ? 'text-teal-700' : 'text-gray-600';
+  const textMuted = isNeon ? 'text-purple-300' : isDark ? 'text-gray-500' : 'text-gray-500';
 
   const buttonPrimary = isNeon
     ? 'from-fuchsia-500 via-purple-500 to-violet-500 shadow-fuchsia-500/50'
@@ -82,16 +79,7 @@ function LandingContent() {
     ? 'bg-teal-100/20 border-teal-200/30'
     : 'bg-white/20 border-white/30';
 
-  // Word colors for animation
-  const wordColors = isNeon
-    ? ['text-fuchsia-400', 'text-violet-400', 'text-lime-400']
-    : isDark
-    ? ['text-cyan-400', 'text-purple-400', 'text-blue-400']
-    : isEarthy
-    ? ['text-amber-600', 'text-orange-600', 'text-yellow-600']
-    : isCalm
-    ? ['text-teal-600', 'text-emerald-600', 'text-sky-600']
-    : ['text-cyan-500', 'text-pink-500', 'text-orange-500'];
+  const accentColor = isNeon ? 'text-fuchsia-400' : isDark ? 'text-cyan-400' : isEarthy ? 'text-amber-600' : isCalm ? 'text-teal-600' : 'text-cyan-500';
 
   const iconColors = isNeon
     ? ['text-fuchsia-400', 'text-violet-400', 'text-lime-400']
@@ -113,125 +101,90 @@ function LandingContent() {
     ? ['bg-teal-500/15', 'bg-emerald-500/15', 'bg-sky-500/15']
     : ['bg-cyan-500/15', 'bg-pink-500/15', 'bg-orange-500/15'];
 
-  const features = [
-    { icon: MessageSquare, label: 'Communicate', desc: 'AI detects high-intent conversations' },
-    { icon: Zap, label: 'Connect', desc: 'Engage at scale without spam' },
-    { icon: Users, label: 'Community', desc: 'Build tribes around shared needs' },
-  ];
+  const checkColors = isNeon
+    ? ['text-fuchsia-400', 'text-violet-400', 'text-lime-400']
+    : isDark
+    ? ['text-cyan-400', 'text-purple-400', 'text-blue-400']
+    : isEarthy
+    ? ['text-amber-500', 'text-orange-500', 'text-yellow-500']
+    : isCalm
+    ? ['text-teal-500', 'text-emerald-500', 'text-sky-500']
+    : ['text-cyan-500', 'text-pink-500', 'text-orange-500'];
 
   return (
-    <div className={`min-h-screen ${colors.gradient} flex flex-col`}>
-      {/* Minimal Navigation */}
+    <div className={`min-h-screen ${colors.gradient}`}>
+      {/* Navigation */}
       <nav className={`fixed top-0 w-full ${navGlass} border-b z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
             <Logo size="lg" href="/" />
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <Link href="/pricing" className={`${textSecondary} hover:opacity-80 font-medium transition text-sm hidden sm:block`}>
+                Pricing
+              </Link>
               <ThemeSwitcher />
               <Link
                 href="/login"
-                className={`${textSecondary} hover:opacity-80 font-medium transition text-sm hidden sm:block`}
+                className={`${textSecondary} hover:opacity-80 font-medium transition text-sm`}
               >
                 Sign In
               </Link>
-              <button
-                onClick={handleTryDemo}
-                className={`inline-flex items-center gap-1 bg-gradient-to-r ${buttonPrimary} text-white px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition shadow-lg text-xs sm:text-sm`}
-              >
-                Demo
-                <ArrowRight className="w-3 h-3" />
-              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero - Full Screen */}
-      <main className="flex-1 flex flex-col justify-center pt-14 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto w-full">
-          {/* Animated Headline */}
+      {/* Hero Section - First Screen */}
+      <section className="min-h-screen flex flex-col justify-center pt-14 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto w-full text-center">
+          {/* Problem Statement */}
           <div
-            className={`text-center mb-6 sm:mb-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <h1 className={`text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight ${textPrimary} mb-3 sm:mb-4`}>
-              <span className="relative inline-block h-[1.15em] overflow-hidden align-bottom min-w-[280px] sm:min-w-[400px]">
-                {words.map((word, index) => (
-                  <span
-                    key={word}
-                    className={`absolute inset-0 transition-all duration-500 ${wordColors[index]} ${isNeon ? 'neon-text font-black' : ''} ${
-                      index === currentWord
-                        ? 'opacity-100 translate-y-0'
-                        : index < currentWord || (currentWord === 0 && index === 2)
-                        ? 'opacity-0 -translate-y-full'
-                        : 'opacity-0 translate-y-full'
-                    }`}
-                  >
-                    {word}
-                  </span>
-                ))}
-              </span>
+            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight ${textPrimary} mb-6 leading-tight`}>
+              Your product solves a{' '}
+              <span className={accentColor}>real problem</span>.
+              <br />
+              <span className={textSecondary}>Your users don&apos;t even know there&apos;s a solution.</span>
             </h1>
-            <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} max-w-2xl mx-auto font-medium`}>
-              AI finds people seeking your solution.
-              <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>
-              You respond. Communities form.
-            </p>
-          </div>
 
-          {/* 3Cs Feature Pills */}
-          <div
-            className={`flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-          >
-            {features.map((feature, index) => (
-              <div
-                key={feature.label}
-                className={`${cardGlass} backdrop-blur-xl border rounded-full px-3 sm:px-4 py-2 flex items-center gap-2 hover:scale-105 transition-transform cursor-default group`}
-              >
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 ${iconBgs[index]} rounded-full flex items-center justify-center`}>
-                  <feature.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColors[index]}`} />
-                </div>
-                <div className="text-left">
-                  <p className={`text-xs sm:text-sm font-bold ${textPrimary}`}>{feature.label}</p>
-                  <p className={`text-[10px] sm:text-xs ${textSecondary} hidden sm:block`}>{feature.desc}</p>
-                </div>
-              </div>
-            ))}
+            <p className={`text-lg sm:text-xl ${textSecondary} max-w-2xl mx-auto mb-10`}>
+              ReachBy3Cs uses AI to find people actively discussing problems your product solves —
+              then helps you engage authentically at scale.
+            </p>
           </div>
 
           {/* CTA Buttons */}
           <div
-            className={`flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8 transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <Link
               href="/demo"
               className={`group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r ${buttonPrimary} text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-lg sm:text-xl hover:scale-105 transition-all shadow-2xl w-full sm:w-auto`}
             >
-              <Play className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" />
+              <Play className="w-5 h-5 sm:w-6 sm:h-6" />
               Test It Free
               <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" />
-              {/* Pulse ring */}
-              <span className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${buttonPrimary} opacity-50 animate-ping`} style={{ animationDuration: '2s' }} />
             </Link>
             <button
-              onClick={handleTryDemo}
-              className={`inline-flex items-center justify-center gap-2 ${cardGlass} backdrop-blur-xl border px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-semibold text-base hover:scale-105 transition-all ${textPrimary} w-full sm:w-auto`}
+              onClick={handleViewDashboard}
+              className={`inline-flex items-center justify-center gap-2 ${cardGlass} backdrop-blur-xl border px-8 py-4 rounded-2xl font-semibold text-base hover:scale-105 transition-all ${textPrimary} w-full sm:w-auto`}
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Sparkles className="w-5 h-5" />
               View Dashboard
             </button>
           </div>
 
           {/* Social Proof */}
           <div
-            className={`text-center transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className={`inline-flex items-center gap-2 ${cardGlass} backdrop-blur-xl border rounded-full px-4 py-2`}>
+            <div className={`inline-flex items-center gap-3 ${cardGlass} backdrop-blur-xl border rounded-full px-5 py-2.5`}>
               <div className="flex -space-x-2">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 ${isDark ? 'border-gray-900' : 'border-white'} ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 ${isDark ? 'border-gray-900' : 'border-white'} ${
                       isNeon
                         ? ['bg-fuchsia-500', 'bg-violet-500', 'bg-lime-500', 'bg-pink-500'][i]
                         : isDark
@@ -241,55 +194,185 @@ function LandingContent() {
                   />
                 ))}
               </div>
-              <div className={`text-xs sm:text-sm ${textSecondary}`}>
+              <div className={`text-sm ${textSecondary}`}>
                 <span className={`font-bold ${textPrimary}`}>500+</span> conversations matched today
               </div>
-              <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isNeon ? 'text-lime-400' : isDark ? 'text-green-400' : 'text-green-600'}`} />
+              <TrendingUp className={`w-4 h-4 ${isNeon ? 'text-lime-400' : isDark ? 'text-green-400' : 'text-green-600'}`} />
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Scroll Indicator */}
-      <div className={`text-center py-4 ${textSecondary}`}>
-        <a href="#features" className="inline-flex flex-col items-center gap-1 hover:opacity-70 transition">
-          <span className="text-xs">Learn more</span>
-          <ChevronDown className="w-4 h-4 animate-bounce" />
-        </a>
-      </div>
+        {/* Scroll Indicator */}
+        <div className={`text-center mt-auto pb-8 ${textSecondary}`}>
+          <a href="#features" className="inline-flex flex-col items-center gap-1 hover:opacity-70 transition">
+            <span className="text-sm">Learn more</span>
+            <ChevronDown className="w-5 h-5 animate-bounce" />
+          </a>
+        </div>
+      </section>
 
-      {/* Features Section (Below Fold) */}
-      <section id="features" className="py-16 px-4 sm:px-6 border-t border-white/10">
-        <div className="max-w-6xl mx-auto">
-          <h2 className={`text-2xl sm:text-3xl font-bold ${textPrimary} text-center mb-8`}>
-            How ReachBy3Cs Works
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { num: '1', title: 'Detect', desc: 'AI crawls Reddit, Twitter, Quora to find high-intent conversations' },
-              { num: '2', title: 'Analyze', desc: 'Each post scored for intent, risk, and engagement opportunity' },
-              { num: '3', title: 'Generate', desc: 'AI creates authentic, value-first response variants' },
-              { num: '4', title: 'Engage', desc: 'Review, approve, post. Track results and build community' },
-            ].map((step, i) => (
-              <div key={step.num} className={`${cardGlass} backdrop-blur-xl border rounded-xl p-4 hover:scale-105 transition-transform`}>
-                <div className={`w-8 h-8 rounded-full ${iconBgs[i % 3]} flex items-center justify-center mb-3`}>
-                  <span className={`font-bold text-sm ${iconColors[i % 3]}`}>{step.num}</span>
-                </div>
-                <h3 className={`font-bold ${textPrimary} mb-1`}>{step.title}</h3>
-                <p className={`text-xs ${textSecondary}`}>{step.desc}</p>
+      {/* The 3Cs Section - Second Screen */}
+      <section id="features" className="min-h-screen flex items-center py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${textPrimary} mb-4`}>
+              The Power of <span className={accentColor}>3Cs</span>
+            </h2>
+            <p className={`text-lg sm:text-xl ${textSecondary} max-w-2xl mx-auto`}>
+              Master the three pillars of authentic engagement
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {/* Communicate */}
+            <div className={`${cardGlass} backdrop-blur-xl rounded-2xl p-6 lg:p-8 hover:scale-105 transition-transform border`}>
+              <div className={`w-14 h-14 ${iconBgs[0]} rounded-2xl flex items-center justify-center mb-5`}>
+                <MessageSquare className={`w-7 h-7 ${iconColors[0]}`} />
               </div>
-            ))}
+              <h3 className={`text-xl lg:text-2xl font-bold ${textPrimary} mb-3`}>Communicate</h3>
+              <p className={`${textSecondary} mb-5`}>
+                AI detects high-intent conversations where people need exactly what you offer.
+                Generate authentic, value-first responses that resonate.
+              </p>
+              <ul className="space-y-2">
+                {['Signal detection across platforms', 'Context-aware response generation', 'Risk scoring to avoid missteps'].map((item) => (
+                  <li key={item} className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                    <CheckCircle2 className={`w-4 h-4 ${checkColors[0]} flex-shrink-0`} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Connect */}
+            <div className={`${cardGlass} backdrop-blur-xl rounded-2xl p-6 lg:p-8 hover:scale-105 transition-transform border`}>
+              <div className={`w-14 h-14 ${iconBgs[1]} rounded-2xl flex items-center justify-center mb-5`}>
+                <Zap className={`w-7 h-7 ${iconColors[1]}`} />
+              </div>
+              <h3 className={`text-xl lg:text-2xl font-bold ${textPrimary} mb-3`}>Connect</h3>
+              <p className={`${textSecondary} mb-5`}>
+                Engage at scale without being spammy. Our smart CTA system ensures 30% of responses
+                are pure value — building trust before any ask.
+              </p>
+              <ul className="space-y-2">
+                {['Human-like posting delays', 'CTA level control (0-3)', 'Auto-post for low-risk responses'].map((item) => (
+                  <li key={item} className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                    <CheckCircle2 className={`w-4 h-4 ${checkColors[1]} flex-shrink-0`} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Community */}
+            <div className={`${cardGlass} backdrop-blur-xl rounded-2xl p-6 lg:p-8 hover:scale-105 transition-transform border`}>
+              <div className={`w-14 h-14 ${iconBgs[2]} rounded-2xl flex items-center justify-center mb-5`}>
+                <Users className={`w-7 h-7 ${iconColors[2]}`} />
+              </div>
+              <h3 className={`text-xl lg:text-2xl font-bold ${textPrimary} mb-3`}>Community</h3>
+              <p className={`${textSecondary} mb-5`}>
+                Turn scattered conversations into organized communities. AI clusters similar
+                discussions to identify recurring themes and growth opportunities.
+              </p>
+              <ul className="space-y-2">
+                {['Automatic community clustering', 'Trending topic detection', 'Community health analytics'].map((item) => (
+                  <li key={item} className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                    <CheckCircle2 className={`w-4 h-4 ${checkColors[2]} flex-shrink-0`} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Scroll to How It Works */}
+          <div className={`text-center mt-12 ${textSecondary}`}>
+            <a href="#how-it-works" className="inline-flex flex-col items-center gap-1 hover:opacity-70 transition">
+              <span className="text-sm">See how it works</span>
+              <ChevronDown className="w-5 h-5 animate-bounce" />
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Mini Footer */}
-      <footer className={`py-4 px-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200/50'}`}>
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
+      {/* How It Works - Third Screen */}
+      <section id="how-it-works" className="min-h-screen flex items-center py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${textPrimary} mb-4`}>
+              How <span className={accentColor}>ReachBy3Cs</span> Works
+            </h2>
+            <p className={`text-lg sm:text-xl ${textSecondary} max-w-2xl mx-auto`}>
+              From detection to engagement in minutes, not hours
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            {[
+              {
+                num: '1',
+                title: 'Detect',
+                description: 'AI crawls Reddit, Twitter, Quora & more to find conversations matching your problem categories',
+                icon: BarChart3
+              },
+              {
+                num: '2',
+                title: 'Analyze',
+                description: 'Each post is scored for intent, risk, and engagement opportunity',
+                icon: Shield
+              },
+              {
+                num: '3',
+                title: 'Generate',
+                description: 'AI creates multiple response variants — value-first, soft CTA, and contextual',
+                icon: Sparkles
+              },
+              {
+                num: '4',
+                title: 'Engage',
+                description: 'Review, approve, or auto-post. Track results and build community',
+                icon: Clock
+              },
+            ].map((step, i) => (
+              <div key={step.num} className={`${cardGlass} backdrop-blur-xl border rounded-2xl p-6 text-center hover:scale-105 transition-transform`}>
+                <div className="relative inline-block mb-4">
+                  <div className={`w-16 h-16 ${iconBgs[i % 3]} rounded-2xl flex items-center justify-center`}>
+                    <step.icon className={`w-8 h-8 ${iconColors[i % 3]}`} />
+                  </div>
+                  <div className={`absolute -top-2 -right-2 w-7 h-7 ${isDark ? 'bg-white text-gray-900' : 'bg-gray-900 text-white'} rounded-full flex items-center justify-center font-bold text-sm`}>
+                    {step.num}
+                  </div>
+                </div>
+                <h3 className={`text-xl font-bold ${textPrimary} mb-2`}>{step.title}</h3>
+                <p className={`text-sm ${textSecondary}`}>{step.description}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Final CTA */}
+          <div className="text-center mt-16">
+            <Link
+              href="/demo"
+              className={`inline-flex items-center justify-center gap-2 bg-gradient-to-r ${buttonPrimary} text-white px-10 py-5 rounded-2xl font-bold text-xl hover:scale-105 transition-all shadow-2xl`}
+            >
+              <Play className="w-6 h-6" />
+              Try It Free Now
+              <ArrowRight className="w-6 h-6" />
+            </Link>
+            <p className={`mt-4 ${textMuted} text-sm`}>
+              No credit card required. See results in seconds.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className={`py-6 px-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200/50'}`}>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
           <Logo size="sm" href="/" />
-          <div className={`flex items-center gap-4 ${textSecondary}`}>
-            <Link href="/pitch" className="hover:opacity-80">Investors</Link>
-            <Link href="/pricing" className="hover:opacity-80">Pricing</Link>
+          <div className={`flex items-center gap-6 ${textMuted}`}>
+            <Link href="/pricing" className="hover:opacity-80 transition">Pricing</Link>
+            <Link href="/pitch" className="hover:opacity-80 transition">Investors</Link>
             <span>&copy; 2026 ReachBy3Cs</span>
           </div>
         </div>
