@@ -23,8 +23,24 @@ from src.crawlers.scheduler import (
 )
 from src.crawlers.ai_search import generate_search_queries
 from src.db.supabase import get_supabase_client
+from src.agents.engagement_pipeline import EngagementPipeline, create_engagement_pipeline
 
 logger = logging.getLogger(__name__)
+
+# Cached pipeline instance for AI search (avoid creating new instance per request)
+_ai_search_pipeline: EngagementPipeline | None = None
+
+
+def get_ai_search_pipeline() -> EngagementPipeline:
+    """Get or create cached pipeline for AI search.
+
+    Returns:
+        EngagementPipeline: The cached pipeline instance.
+    """
+    global _ai_search_pipeline
+    if _ai_search_pipeline is None:
+        _ai_search_pipeline = create_engagement_pipeline()
+    return _ai_search_pipeline
 
 router = APIRouter(prefix="/crawlers", tags=["crawlers"])
 
@@ -613,140 +629,150 @@ async def ai_search_with_responses(
 
     Returns posts with AI-generated responses ready for sales agents to copy/edit.
     """
-    from src.agents.engagement_pipeline import create_engagement_pipeline
+    try:
+        pipeline_start = time.time()
 
-    pipeline_start = time.time()
-
-    # Step 1: Run the AI search (reuse existing logic)
-    search_result = await ai_search(
-        AISearchRequest(
-            target_audience=request.target_audience,
-            solution=request.solution,
-            platforms=request.platforms,
-            limit=request.limit,
+        # Step 1: Run the AI search (reuse existing logic)
+        search_result = await ai_search(
+            AISearchRequest(
+                target_audience=request.target_audience,
+                solution=request.solution,
+                platforms=request.platforms,
+                limit=request.limit,
+            )
         )
-    )
 
-    crawl_time = search_result.crawl_time_seconds
+        crawl_time = search_result.crawl_time_seconds
 
-    # If no posts found, return early
-    if not search_result.posts:
+        # If no posts found, return early
+        if not search_result.posts:
+            return AISearchWithResponsesResponse(
+                posts=[],
+                total_found=0,
+                crawl_time_seconds=crawl_time,
+                pipeline_time_seconds=0,
+                errors=search_result.errors,
+                rate_limited=search_result.rate_limited,
+            )
+
+        # Step 2: Get cached pipeline and create tenant context
+        pipeline = get_ai_search_pipeline()
+
+        tenant_context = {
+            "app_name": request.solution[:50] if request.solution else "Solution",
+            "value_prop": request.solution,
+            "target_audience": request.target_audience,
+            "key_benefits": [],
+            "website_url": "",
+        }
+
+        # Step 3: Process each post through the pipeline in parallel
+        async def process_post(post: dict[str, Any]) -> EnhancedPost:
+            """Process a single post through the engagement pipeline."""
+            content = post.get("content", "")
+            url = post.get("external_url", "")
+            platform = _detect_platform_from_url(url)
+
+            # Create base enhanced post
+            enhanced = EnhancedPost(
+                external_id=post.get("external_id", ""),
+                external_url=url,
+                content=content,
+                platform=platform,
+                author_handle=post.get("author_handle"),
+                author_display_name=post.get("author_display_name"),
+                external_created_at=post.get("external_created_at"),
+                crawled_at=post.get("crawled_at", datetime.utcnow().isoformat()),
+                engagement_metrics=post.get("engagement_metrics", {}),
+                platform_metadata=post.get("platform_metadata", {}),
+            )
+
+            # Skip if no content
+            if not content or len(content.strip()) < 10:
+                enhanced.error = "Insufficient content for analysis"
+                return enhanced
+
+            try:
+                # Run pipeline with timeout (10 seconds per post)
+                result = await asyncio.wait_for(
+                    pipeline.run_async(
+                        text=content,
+                        platform=platform,
+                        tenant_context=tenant_context,
+                    ),
+                    timeout=15.0,
+                )
+
+                # Extract response data
+                responses = result.get("responses") or {}
+                risk = result.get("risk") or {}
+                cts = result.get("cts") or {}
+
+                enhanced.ai_response = responses.get("selected_response", "")
+                enhanced.response_variants = {
+                    "value_first": responses.get("value_first_response", ""),
+                    "soft_cta": responses.get("soft_cta_response", ""),
+                    "contextual": responses.get("contextual_response", ""),
+                }
+                enhanced.risk_level = risk.get("risk_level", "medium")
+                enhanced.cts_score = cts.get("cts_score", 0.5)
+
+                # Check for pipeline error
+                if result.get("error"):
+                    enhanced.error = result.get("error")
+
+            except asyncio.TimeoutError:
+                logger.warning(f"Pipeline timeout for post: {url[:50]}...")
+                enhanced.error = "Pipeline processing timeout"
+            except Exception as e:
+                logger.error(f"Pipeline error for post {url[:50]}: {e}")
+                enhanced.error = str(e)
+
+            return enhanced
+
+        # Process all posts in parallel
+        tasks = [process_post(post) for post in search_result.posts]
+        enhanced_posts = await asyncio.gather(*tasks)
+
+        pipeline_time = time.time() - pipeline_start - crawl_time
+
+        # Collect any processing errors
+        all_errors = list(search_result.errors)
+        for post in enhanced_posts:
+            if post.error:
+                all_errors.append(f"Post {post.external_id}: {post.error}")
+
+        # Log anonymous analytics (non-blocking, no PII)
+        platforms = request.platforms or ["reddit.com", "stackoverflow.com", "news.ycombinator.com"]
+        target_category = _categorize_target_audience(request.target_audience)
+        asyncio.create_task(
+            log_anonymous_search(
+                platforms=platforms,
+                result_count=len(enhanced_posts),
+                target_audience_category=target_category,
+                session_hash=None,  # No session tracking from API
+            )
+        )
+
         return AISearchWithResponsesResponse(
-            posts=[],
-            total_found=0,
+            posts=enhanced_posts,
+            total_found=len(enhanced_posts),
             crawl_time_seconds=crawl_time,
-            pipeline_time_seconds=0,
-            errors=search_result.errors,
+            pipeline_time_seconds=round(pipeline_time, 2),
+            errors=all_errors,
             rate_limited=search_result.rate_limited,
         )
 
-    # Step 2: Create pipeline and tenant context
-    pipeline = create_engagement_pipeline()
-
-    tenant_context = {
-        "app_name": request.solution[:50] if request.solution else "Solution",
-        "value_prop": request.solution,
-        "target_audience": request.target_audience,
-        "key_benefits": [],
-        "website_url": "",
-    }
-
-    # Step 3: Process each post through the pipeline in parallel
-    async def process_post(post: dict[str, Any]) -> EnhancedPost:
-        """Process a single post through the engagement pipeline."""
-        content = post.get("content", "")
-        url = post.get("external_url", "")
-        platform = _detect_platform_from_url(url)
-
-        # Create base enhanced post
-        enhanced = EnhancedPost(
-            external_id=post.get("external_id", ""),
-            external_url=url,
-            content=content,
-            platform=platform,
-            author_handle=post.get("author_handle"),
-            author_display_name=post.get("author_display_name"),
-            external_created_at=post.get("external_created_at"),
-            crawled_at=post.get("crawled_at", datetime.utcnow().isoformat()),
-            engagement_metrics=post.get("engagement_metrics", {}),
-            platform_metadata=post.get("platform_metadata", {}),
+    except Exception as e:
+        logger.error(f"AI search with responses failed: {e}")
+        return AISearchWithResponsesResponse(
+            posts=[],
+            total_found=0,
+            crawl_time_seconds=0,
+            pipeline_time_seconds=0,
+            errors=[str(e)],
+            rate_limited=False,
         )
-
-        # Skip if no content
-        if not content or len(content.strip()) < 10:
-            enhanced.error = "Insufficient content for analysis"
-            return enhanced
-
-        try:
-            # Run pipeline with timeout (10 seconds per post)
-            result = await asyncio.wait_for(
-                pipeline.run_async(
-                    text=content,
-                    platform=platform,
-                    tenant_context=tenant_context,
-                ),
-                timeout=15.0,
-            )
-
-            # Extract response data
-            responses = result.get("responses") or {}
-            risk = result.get("risk") or {}
-            cts = result.get("cts") or {}
-
-            enhanced.ai_response = responses.get("selected_response", "")
-            enhanced.response_variants = {
-                "value_first": responses.get("value_first_response", ""),
-                "soft_cta": responses.get("soft_cta_response", ""),
-                "contextual": responses.get("contextual_response", ""),
-            }
-            enhanced.risk_level = risk.get("risk_level", "medium")
-            enhanced.cts_score = cts.get("cts_score", 0.5)
-
-            # Check for pipeline error
-            if result.get("error"):
-                enhanced.error = result.get("error")
-
-        except asyncio.TimeoutError:
-            logger.warning(f"Pipeline timeout for post: {url[:50]}...")
-            enhanced.error = "Pipeline processing timeout"
-        except Exception as e:
-            logger.error(f"Pipeline error for post {url[:50]}: {e}")
-            enhanced.error = str(e)
-
-        return enhanced
-
-    # Process all posts in parallel
-    tasks = [process_post(post) for post in search_result.posts]
-    enhanced_posts = await asyncio.gather(*tasks)
-
-    pipeline_time = time.time() - pipeline_start - crawl_time
-
-    # Collect any processing errors
-    all_errors = list(search_result.errors)
-    for post in enhanced_posts:
-        if post.error:
-            all_errors.append(f"Post {post.external_id}: {post.error}")
-
-    # Log anonymous analytics (non-blocking, no PII)
-    platforms = request.platforms or ["reddit.com", "stackoverflow.com", "news.ycombinator.com"]
-    target_category = _categorize_target_audience(request.target_audience)
-    asyncio.create_task(
-        log_anonymous_search(
-            platforms=platforms,
-            result_count=len(enhanced_posts),
-            target_audience_category=target_category,
-            session_hash=None,  # No session tracking from API
-        )
-    )
-
-    return AISearchWithResponsesResponse(
-        posts=enhanced_posts,
-        total_found=len(enhanced_posts),
-        crawl_time_seconds=crawl_time,
-        pipeline_time_seconds=round(pipeline_time, 2),
-        errors=all_errors,
-        rate_limited=search_result.rate_limited,
-    )
 
 
 # Status Endpoints
