@@ -158,41 +158,40 @@ function LandingContent() {
           <div
             className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            {/* Line 1: Main problem */}
-            <h1 className={`text-2xl sm:text-4xl lg:text-5xl font-bold ${textPrimary} mb-2`}>
-              Your product solves a <span className={accentColor}>real problem</span>.
-            </h1>
+            {/* Line 1: Problem */}
+            <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-1`}>
+              Your product solves a <span className={`${textPrimary} font-medium`}>real problem</span>.
+            </p>
 
-            {/* Line 2: User awareness issue */}
-            <p className={`text-lg sm:text-2xl lg:text-3xl ${textSecondary} mb-10`}>
+            {/* Line 2: User awareness */}
+            <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-10`}>
               Your users don&apos;t even know it exists.
             </p>
 
-            {/* Hero: ReachBy3Cs with animated words */}
-            <div className="mb-8">
-              <div className={`text-4xl sm:text-6xl lg:text-7xl font-black ${textPrimary} mb-4`}>
-                ReachBy3Cs
-              </div>
-              <div className="h-12 sm:h-16 flex items-center justify-center overflow-hidden">
-                {words.map((word, index) => (
-                  <span
-                    key={word}
-                    className={`absolute text-3xl sm:text-5xl lg:text-6xl font-bold transition-all duration-500 ${wordColors[index]} ${
-                      currentWord === index
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 translate-y-8'
-                    }`}
-                  >
-                    {word}.
-                  </span>
-                ))}
+            {/* Animated tagline with context */}
+            <div className="mb-10">
+              <div className="flex flex-wrap items-center justify-center gap-x-3 text-2xl sm:text-3xl lg:text-4xl">
+                {/* Animated word */}
+                <div className="relative h-10 sm:h-12 w-[180px] sm:w-[220px] lg:w-[280px] inline-flex items-center justify-center overflow-hidden">
+                  {words.map((word, index) => (
+                    <span
+                      key={word}
+                      className={`absolute font-semibold transition-all duration-700 ease-in-out ${wordColors[index]} ${
+                        currentWord === index
+                          ? 'opacity-100 translate-y-0'
+                          : 'opacity-0 translate-y-6'
+                      }`}
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+                {/* Static text */}
+                <span className={textPrimary}>
+                  to the people who are talking about the problem you are solving.
+                </span>
               </div>
             </div>
-
-            {/* Description in smaller font */}
-            <p className={`text-base sm:text-lg ${textSecondary} max-w-xl mx-auto mb-10`}>
-              AI finds people discussing problems your product solves — then helps you engage authentically at scale.
-            </p>
           </div>
 
           {/* CTA Buttons */}
@@ -212,7 +211,7 @@ function LandingContent() {
               className={`inline-flex items-center justify-center gap-2 ${cardGlass} backdrop-blur-xl border px-8 py-4 rounded-2xl font-semibold text-base hover:scale-105 transition-all ${textPrimary} w-full sm:w-auto`}
             >
               <Sparkles className="w-5 h-5" />
-              View Dashboard
+              Review Demo
             </button>
           </div>
 
