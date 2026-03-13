@@ -166,30 +166,33 @@ function LandingContent() {
               Your users don&apos;t even know it exists.
             </p>
 
-            {/* Animated word + continuation - single flowing line */}
-            <div className="mb-8 sm:mb-12">
-              <div className="flex flex-wrap items-baseline justify-center gap-x-2 sm:gap-x-3">
-                {/* Large bold animated word */}
-                <div className="relative h-12 sm:h-16 lg:h-20 w-[200px] sm:w-[280px] lg:w-[340px] inline-flex items-center justify-center overflow-hidden">
-                  {words.map((word, index) => (
-                    <span
-                      key={word}
-                      className={`absolute text-3xl sm:text-5xl lg:text-6xl font-bold transition-all duration-700 ease-in-out ${wordColors[index]} ${
-                        currentWord === index
-                          ? 'opacity-100 translate-y-0'
-                          : 'opacity-0 translate-y-6'
-                      }`}
-                    >
-                      {word}
-                    </span>
-                  ))}
-                </div>
-                {/* Continuation text - smaller */}
-                <span className={`text-lg sm:text-xl lg:text-2xl ${textSecondary}`}>
-                  to the people talking about the problem you&apos;re solving.
-                </span>
+            {/* Centered animated words */}
+            <div className="mb-6 sm:mb-8">
+              <div className="relative h-14 sm:h-20 lg:h-24 flex items-center justify-center overflow-hidden">
+                {words.map((word, index) => (
+                  <span
+                    key={word}
+                    className={`absolute text-4xl sm:text-6xl lg:text-7xl font-bold transition-all duration-700 ease-in-out ${wordColors[index]} ${
+                      currentWord === index
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-6'
+                    }`}
+                  >
+                    {word}
+                  </span>
+                ))}
               </div>
             </div>
+
+            {/* Value proposition */}
+            <p className={`text-lg sm:text-xl lg:text-2xl ${textPrimary} mb-3`}>
+              ReachBy3Cs finds people seeking your solution.
+            </p>
+
+            {/* Flow description */}
+            <p className={`text-base sm:text-lg ${textSecondary} mb-10 sm:mb-12`}>
+              You respond <span className={accentColor}>&gt;</span> Communities form
+            </p>
           </div>
 
           {/* CTA Buttons */}
