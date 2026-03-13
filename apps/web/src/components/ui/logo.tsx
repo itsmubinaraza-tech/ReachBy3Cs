@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useTheme, themes } from '@/contexts/theme-context';
 
 export type LogoSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -11,6 +12,7 @@ interface LogoProps {
   variant?: LogoVariant;
   className?: string;
   showText?: boolean;
+  href?: string;
 }
 
 // Height-based sizing for icon logo
@@ -37,7 +39,7 @@ const textSizeClasses: Record<LogoSize, string> = {
   xl: 'text-2xl',
 };
 
-export function Logo({ size = 'md', variant = 'full', className = '', showText = true }: LogoProps) {
+export function Logo({ size = 'md', variant = 'full', className = '', showText = true, href }: LogoProps) {
   // Use SSR-safe theme hook
   const themeContext = useThemeSafe();
   const theme = themeContext.theme;
@@ -59,8 +61,8 @@ export function Logo({ size = 'md', variant = 'full', className = '', showText =
     ? 'text-teal-600'
     : 'text-cyan-500';
 
-  return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
+  const logoContent = (
+    <div className={`flex items-center gap-1.5 ${className} ${href ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}>
       <div className={`relative ${heightClass} w-auto flex-shrink-0`}>
         <Image
           src="/3cs-logo.png"
@@ -78,6 +80,13 @@ export function Logo({ size = 'md', variant = 'full', className = '', showText =
       )}
     </div>
   );
+
+  // Wrap in Link if href is provided
+  if (href) {
+    return <Link href={href}>{logoContent}</Link>;
+  }
+
+  return logoContent;
 }
 
 // SSR-safe version of useTheme that returns defaults when context unavailable

@@ -8,6 +8,7 @@ import { useQueueCount } from '@/contexts/queue-count-context';
 import { hasPermission } from '@/lib/auth/rbac';
 import { NavIcon } from './nav-icons';
 import { sidebarSections, type NavItem } from './nav-config';
+import { Logo } from '@/components/ui/logo';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -40,17 +41,17 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-        {!isCollapsed && (
-          <Link href="/dashboard" className="font-semibold text-lg text-gray-900 dark:text-white">
-            NM Platform
-          </Link>
+      <div className="flex items-center justify-between h-16 px-3 border-b border-gray-200 dark:border-gray-700">
+        {!isCollapsed ? (
+          <Logo size="md" href="/" />
+        ) : (
+          <Logo size="sm" href="/" showText={false} />
         )}
         <button
           onClick={onToggleCollapse}
           className={cn(
             'p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400',
-            isCollapsed && 'mx-auto'
+            isCollapsed && 'hidden'
           )}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >

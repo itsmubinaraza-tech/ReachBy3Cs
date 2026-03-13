@@ -125,7 +125,7 @@ function LandingContent() {
       <nav className={`fixed top-0 w-full ${navGlass} border-b z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
-            <Logo size="lg" />
+            <Logo size="lg" href="/" />
             <div className="flex items-center gap-2 sm:gap-3">
               <ThemeSwitcher />
               <Link
@@ -286,7 +286,7 @@ function LandingContent() {
       {/* Mini Footer */}
       <footer className={`py-4 px-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200/50'}`}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
-          <Logo size="sm" />
+          <Logo size="sm" href="/" />
           <div className={`flex items-center gap-4 ${textSecondary}`}>
             <Link href="/pitch" className="hover:opacity-80">Investors</Link>
             <Link href="/pricing" className="hover:opacity-80">Pricing</Link>

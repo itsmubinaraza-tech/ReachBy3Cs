@@ -1,13 +1,15 @@
+'use client';
+
+import { Logo } from '@/components/ui/logo';
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            ReachBy3Cs
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        {/* Logo - links back to home */}
+        <div className="text-center mb-8 flex flex-col items-center">
+          <Logo size="xl" href="/" />
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Communicate. Connect. Community.
           </p>
         </div>

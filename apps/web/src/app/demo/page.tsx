@@ -84,7 +84,7 @@ function DemoContent() {
                 Back to Home
               </Link>
               <div className="hidden sm:block">
-                <Logo size="lg" />
+                <Logo size="lg" href="/" />
               </div>
             </div>
             <div className="flex items-center gap-3">

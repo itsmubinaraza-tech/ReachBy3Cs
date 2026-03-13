@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useOrg } from '@/contexts/org-context';
 import { cn } from '@/lib/utils';
 import { NavIcon } from './nav-icons';
+import { Logo } from '@/components/ui/logo';
 
 interface HeaderProps {
   isSidebarCollapsed: boolean;
@@ -56,12 +57,9 @@ export function Header({ isSidebarCollapsed, onMenuClick }: HeaderProps) {
           </button>
 
           {/* Mobile logo */}
-          <Link
-            href="/dashboard"
-            className="font-semibold text-lg text-gray-900 dark:text-white lg:hidden"
-          >
-            NM Platform
-          </Link>
+          <div className="lg:hidden">
+            <Logo size="sm" href="/" />
+          </div>
 
           {/* Organization name (desktop) */}
           <div className="hidden lg:block">
