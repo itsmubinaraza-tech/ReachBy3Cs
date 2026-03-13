@@ -96,18 +96,29 @@ function updateItemWithAnalysis(
   item: PreviewQueueItem,
   analysis: PipelineAnalyzeResult
 ): PreviewQueueItem {
+  // Safely extract response - handle various API response structures
+  const response = analysis?.response;
+  const responseText = response?.recommended || response?.value_first || response?.contextual || '';
+
+  // Safely extract risk info
+  const risk = analysis?.risk;
+  const riskLevel = risk?.level || 'medium';
+
+  // Safely extract CTS score
+  const ctsScore = analysis?.cts_score ?? 0.5;
+
   return {
     ...item,
-    response: analysis.response.recommended || analysis.response.value_first,
-    responseVariants: {
-      value_first: analysis.response.value_first,
-      soft_cta: analysis.response.soft_cta,
-      contextual: analysis.response.contextual,
-    },
-    riskLevel: analysis.risk.level,
-    ctsScore: analysis.cts_score,
-    responseStatus: 'ready' as ResponseStatus,
-    responseError: undefined,
+    response: responseText,
+    responseVariants: response ? {
+      value_first: response.value_first || '',
+      soft_cta: response.soft_cta || '',
+      contextual: response.contextual || '',
+    } : undefined,
+    riskLevel: riskLevel as 'low' | 'medium' | 'high' | 'blocked',
+    ctsScore,
+    responseStatus: responseText ? 'ready' as ResponseStatus : 'error' as ResponseStatus,
+    responseError: responseText ? undefined : 'No response generated',
   };
 }
 
@@ -262,6 +273,11 @@ export function useDemoSearch(): UseDemoSearchResult {
           // Check if cancelled after async call
           if (cancelledRef.current) {
             return { itemId, success: false, cancelled: true };
+          }
+
+          // Validate the analysis response has expected structure
+          if (!analysis || typeof analysis !== 'object') {
+            throw new Error('Invalid analysis response from server');
           }
 
           // Update this specific item with analysis results
