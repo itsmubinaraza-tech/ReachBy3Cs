@@ -25,9 +25,16 @@ function LandingContent() {
   const router = useRouter();
   const { theme, colors } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
+  const [currentWord, setCurrentWord] = useState(0);
+
+  const words = ['Communicate', 'Connect', 'Community'];
 
   useEffect(() => {
     setIsVisible(true);
+    const interval = setInterval(() => {
+      setCurrentWord((prev) => (prev + 1) % 3);
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleViewDashboard = () => {
@@ -80,6 +87,16 @@ function LandingContent() {
     : 'bg-white/20 border-white/30';
 
   const accentColor = isNeon ? 'text-fuchsia-400' : isDark ? 'text-cyan-400' : isEarthy ? 'text-amber-600' : isCalm ? 'text-teal-600' : 'text-cyan-500';
+
+  const wordColors = isNeon
+    ? ['text-fuchsia-400', 'text-violet-400', 'text-lime-400']
+    : isDark
+    ? ['text-cyan-400', 'text-purple-400', 'text-blue-400']
+    : isEarthy
+    ? ['text-amber-600', 'text-orange-600', 'text-yellow-600']
+    : isCalm
+    ? ['text-teal-600', 'text-emerald-600', 'text-sky-600']
+    : ['text-cyan-500', 'text-pink-500', 'text-orange-500'];
 
   const iconColors = isNeon
     ? ['text-fuchsia-400', 'text-violet-400', 'text-lime-400']
@@ -141,16 +158,40 @@ function LandingContent() {
           <div
             className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight ${textPrimary} mb-6 leading-tight`}>
-              Your product solves a{' '}
-              <span className={accentColor}>real problem</span>.
-              <br />
-              <span className={textSecondary}>Your users don&apos;t even know there&apos;s a solution.</span>
+            {/* Line 1: Main problem */}
+            <h1 className={`text-2xl sm:text-4xl lg:text-5xl font-bold ${textPrimary} mb-2`}>
+              Your product solves a <span className={accentColor}>real problem</span>.
             </h1>
 
-            <p className={`text-lg sm:text-xl ${textSecondary} max-w-2xl mx-auto mb-10`}>
-              ReachBy3Cs uses AI to find people actively discussing problems your product solves —
-              then helps you engage authentically at scale.
+            {/* Line 2: User awareness issue */}
+            <p className={`text-lg sm:text-2xl lg:text-3xl ${textSecondary} mb-10`}>
+              Your users don&apos;t even know it exists.
+            </p>
+
+            {/* Hero: ReachBy3Cs with animated words */}
+            <div className="mb-8">
+              <div className={`text-4xl sm:text-6xl lg:text-7xl font-black ${textPrimary} mb-4`}>
+                ReachBy3Cs
+              </div>
+              <div className="h-12 sm:h-16 flex items-center justify-center overflow-hidden">
+                {words.map((word, index) => (
+                  <span
+                    key={word}
+                    className={`absolute text-3xl sm:text-5xl lg:text-6xl font-bold transition-all duration-500 ${wordColors[index]} ${
+                      currentWord === index
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-8'
+                    }`}
+                  >
+                    {word}.
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Description in smaller font */}
+            <p className={`text-base sm:text-lg ${textSecondary} max-w-xl mx-auto mb-10`}>
+              AI finds people discussing problems your product solves — then helps you engage authentically at scale.
             </p>
           </div>
 
