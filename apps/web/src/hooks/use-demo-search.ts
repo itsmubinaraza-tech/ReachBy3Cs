@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { agentClient, CrawlResult, PipelineAnalyzeResult } from '@/lib/agent/client';
+import { agentClient, AISearchWithResponsesResult, EnhancedPost } from '@/lib/agent/client';
 import { PreviewQueueItem, ResponseStatus } from '@/lib/landing/mock-preview-data';
 
 // Rate limiting constants
@@ -51,14 +51,14 @@ export interface UseDemoSearchResult {
 }
 
 /**
- * Transform crawl result posts to preview queue items (without AI responses)
+ * Transform enhanced posts (with AI responses) to preview queue items
  */
-function transformToQueueItems(result: CrawlResult): PreviewQueueItem[] {
-  if (!result?.posts || !Array.isArray(result.posts)) {
+function transformEnhancedPosts(posts: EnhancedPost[]): PreviewQueueItem[] {
+  if (!posts || !Array.isArray(posts)) {
     return [];
   }
 
-  return result.posts
+  return posts
     .filter((post) => post && post.external_url)
     .map((post, index) => {
       const url = post.external_url;
@@ -68,12 +68,25 @@ function transformToQueueItems(result: CrawlResult): PreviewQueueItem[] {
       const contentLines = (post.content || '').split('\n');
       const title = contentLines[0]?.slice(0, 100) || 'Untitled Discussion';
 
+      // Get response text - prefer value_first as the main response
+      const responseText = post.ai_response ||
+        post.response_variants?.value_first ||
+        post.response_variants?.contextual || '';
+
+      const hasResponse = !!responseText;
+      const hasError = !!post.error;
+
       return {
         id: post.external_id || `search-${index}`,
         platform,
         title,
         content: post.content || '',
-        response: '', // Empty - will be filled by analyzePost
+        response: responseText,
+        responseVariants: post.response_variants ? {
+          value_first: post.response_variants.value_first || '',
+          soft_cta: post.response_variants.soft_cta || '',
+          contextual: post.response_variants.contextual || '',
+        } : undefined,
         author: post.author_handle || post.author_display_name || 'anonymous',
         url,
         subreddit: platform === 'reddit' ? extractSubreddit(url) : undefined,
@@ -82,44 +95,14 @@ function transformToQueueItems(result: CrawlResult): PreviewQueueItem[] {
           upvotes: post.engagement_metrics?.upvotes,
           comments: post.engagement_metrics?.comments,
         },
-        // Progressive loading status - starts as idle
-        responseStatus: 'idle' as ResponseStatus,
-        responseError: undefined,
+        riskLevel: post.risk_level || 'medium',
+        ctsScore: post.cts_score ?? 0.5,
+        responseStatus: hasError ? 'error' as ResponseStatus :
+                        hasResponse ? 'ready' as ResponseStatus :
+                        'error' as ResponseStatus,
+        responseError: post.error || (hasResponse ? undefined : 'No response generated'),
       };
     });
-}
-
-/**
- * Update a single queue item with AI analysis results
- */
-function updateItemWithAnalysis(
-  item: PreviewQueueItem,
-  analysis: PipelineAnalyzeResult
-): PreviewQueueItem {
-  // Safely extract response - handle various API response structures
-  const response = analysis?.response;
-  const responseText = response?.recommended || response?.value_first || response?.contextual || '';
-
-  // Safely extract risk info
-  const risk = analysis?.risk;
-  const riskLevel = risk?.level || 'medium';
-
-  // Safely extract CTS score
-  const ctsScore = analysis?.cts_score ?? 0.5;
-
-  return {
-    ...item,
-    response: responseText,
-    responseVariants: response ? {
-      value_first: response.value_first || '',
-      soft_cta: response.soft_cta || '',
-      contextual: response.contextual || '',
-    } : undefined,
-    riskLevel: riskLevel as 'low' | 'medium' | 'high' | 'blocked',
-    ctsScore,
-    responseStatus: responseText ? 'ready' as ResponseStatus : 'error' as ResponseStatus,
-    responseError: responseText ? undefined : 'No response generated',
-  };
 }
 
 function detectPlatform(url: string | undefined | null): 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews' {
@@ -156,11 +139,12 @@ function formatRelativeTime(dateString: string): string {
 }
 
 /**
- * Progressive search hook for demo page
+ * Demo search hook - uses combined endpoint for faster results
  *
- * Two-phase approach:
- * 1. Fast search (2-3 sec): Get posts via aiSearch, show immediately
- * 2. Progressive analysis: Analyze each post individually, update UI as each completes
+ * Single request approach:
+ * - Uses aiSearchWithResponses which does scraping + AI analysis server-side
+ * - Returns posts with AI responses in one request
+ * - Much faster than separate scrape + analyze calls
  */
 export function useDemoSearch(): UseDemoSearchResult {
   const [results, setResults] = useState<PreviewQueueItem[]>([]);
@@ -173,20 +157,20 @@ export function useDemoSearch(): UseDemoSearchResult {
   const [remainingSearches, setRemainingSearches] = useState<number>(() => getRemainingSearches());
   const [rateLimited, setRateLimited] = useState<boolean>(() => isRateLimited());
 
-  // Ref to track if analysis should be cancelled
+  // Ref to track if search should be cancelled
   const cancelledRef = useRef(false);
-  // Ref to store form data for analysis phase
-  const formDataRef = useRef<DemoSearchFormData | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const cancelAnalysis = useCallback(() => {
     cancelledRef.current = true;
+    abortControllerRef.current?.abort();
+    setIsSearching(false);
     setIsAnalyzing(false);
   }, []);
 
   const search = useCallback(async (data: DemoSearchFormData) => {
     // Reset cancel flag
     cancelledRef.current = false;
-    formDataRef.current = data;
 
     // Check rate limit before proceeding
     if (isRateLimited()) {
@@ -200,6 +184,7 @@ export function useDemoSearch(): UseDemoSearchResult {
     setAnalyzingCount(0);
     setTotalCount(0);
     setError(null);
+    setResults([]);
 
     try {
       // Validate input
@@ -211,14 +196,19 @@ export function useDemoSearch(): UseDemoSearchResult {
         throw new Error('Please describe your solution (at least 5 characters)');
       }
 
-      // PHASE 1: Fast search (just scrape, no AI)
-      // This returns in 2-3 seconds
-      const searchResult = await agentClient.aiSearch(
+      // Use combined endpoint - scrape + AI analysis in one request
+      // This is much faster than separate calls
+      const searchResult = await agentClient.aiSearchWithResponses(
         data.targetAudience.trim(),
         data.solution.trim(),
-        ['reddit.com', 'stackoverflow.com', 'news.ycombinator.com'],
-        5 // Limit to 5 posts
+        ['reddit.com', 'stackoverflow.com'],
+        3 // Limit to 3 posts for faster response
       );
+
+      // Check if cancelled
+      if (cancelledRef.current) {
+        return;
+      }
 
       // Increment search count after successful search
       incrementSearchCount();
@@ -226,8 +216,8 @@ export function useDemoSearch(): UseDemoSearchResult {
       setRemainingSearches(remaining);
       setRateLimited(remaining === 0);
 
-      // Transform to queue items (without AI responses yet)
-      const queueItems = transformToQueueItems(searchResult);
+      // Transform to queue items (already has AI responses)
+      const queueItems = transformEnhancedPosts(searchResult.posts);
 
       if (queueItems.length === 0) {
         setError('No conversations found. Try being more specific about the problem you solve.');
@@ -237,90 +227,31 @@ export function useDemoSearch(): UseDemoSearchResult {
         return;
       }
 
-      // Show posts immediately with 'generating' status (all at once for parallel)
-      const itemsWithGenerating = queueItems.map((item) => ({
-        ...item,
-        responseStatus: 'generating' as ResponseStatus,
-      }));
-      setResults(itemsWithGenerating);
+      // Show all results at once (already have AI responses)
+      setResults(queueItems);
       setHasSearched(true);
-      setIsSearching(false);
       setTotalCount(queueItems.length);
+      setAnalyzingCount(queueItems.length);
+      setIsSearching(false);
 
-      // PHASE 2: Parallel analysis
-      // Analyze ALL posts in parallel for faster response time
-      setIsAnalyzing(true);
-
-      // Create analysis promises for all posts
-      const analysisPromises = queueItems.map(async (item) => {
-        const itemId = item.id;
-
-        try {
-          // Check if cancelled before starting
-          if (cancelledRef.current) {
-            return { itemId, success: false, cancelled: true };
-          }
-
-          // Analyze this post through the AI pipeline (parallel)
-          const analysis = await agentClient.analyzePost(
-            item.content,
-            item.platform,
-            data.solution.trim(),
-            data.targetAudience.trim(),
-            'ReachBy3Cs Demo' // Required app_name parameter
-          );
-
-          // Check if cancelled after async call
-          if (cancelledRef.current) {
-            return { itemId, success: false, cancelled: true };
-          }
-
-          // Validate the analysis response has expected structure
-          if (!analysis || typeof analysis !== 'object') {
-            throw new Error('Invalid analysis response from server');
-          }
-
-          // Update this specific item with analysis results
-          setResults((prev) =>
-            prev.map((p) =>
-              p.id === itemId ? updateItemWithAnalysis(p, analysis) : p
-            )
-          );
-
-          // Increment completed count
-          setAnalyzingCount((prev) => prev + 1);
-
-          return { itemId, success: true };
-        } catch (analysisError) {
-          console.error(`Analysis error for post ${itemId}:`, analysisError);
-
-          // Mark this item as error
-          setResults((prev) =>
-            prev.map((p) =>
-              p.id === itemId
-                ? {
-                    ...p,
-                    responseStatus: 'error' as ResponseStatus,
-                    responseError: analysisError instanceof Error ? analysisError.message : 'Failed to generate response',
-                  }
-                : p
-            )
-          );
-
-          // Still increment count (this one is done, even if failed)
-          setAnalyzingCount((prev) => prev + 1);
-
-          return { itemId, success: false, error: analysisError };
-        }
-      });
-
-      // Wait for all parallel requests to complete
-      await Promise.allSettled(analysisPromises);
-
-      setIsAnalyzing(false);
     } catch (err) {
       console.error('Search error:', err);
-      setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
+
+      // Provide more helpful error messages
+      let errorMessage = 'Search failed. Please try again.';
+      if (err instanceof Error) {
+        if (err.message.includes('timeout') || err.message.includes('504')) {
+          errorMessage = 'Search timed out. The server may be warming up - please try again.';
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Server error. Please try again in a moment.';
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       setResults([]);
       setHasSearched(true);
       setIsSearching(false);
