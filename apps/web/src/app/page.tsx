@@ -191,7 +191,7 @@ function LandingContent() {
 
             {/* Flow description */}
             <p className={`text-base sm:text-lg ${textSecondary} mb-10 sm:mb-12`}>
-              You respond <span className={accentColor}>&gt;</span> Communities form
+              You respond <span className={accentColor}>&gt;</span> Communities form <span className={accentColor}>&gt;</span> Your products get to the people seeking those solutions
             </p>
           </div>
 
