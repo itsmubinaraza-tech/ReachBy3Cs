@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, Edit2, CheckCircle, ExternalLink, Save } from 'lucide-react';
-import { PreviewQueueItem } from '@/lib/landing/mock-preview-data';
+import { useState, useEffect } from 'react';
+import { Copy, Edit2, CheckCircle, ExternalLink, Save, Loader2, AlertCircle } from 'lucide-react';
+import { PreviewQueueItem, ResponseStatus } from '@/lib/landing/mock-preview-data';
 import { useTheme } from '@/contexts/theme-context';
 
 interface PreviewQueueItemCardProps {
@@ -32,6 +32,29 @@ export function PreviewQueueItemCard({
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedResponse, setEditedResponse] = useState(item.response || '');
+  const [showResponse, setShowResponse] = useState(false);
+
+  // Animation: fade in response when it becomes ready
+  useEffect(() => {
+    if (item.responseStatus === 'ready' || (item.response && !item.responseStatus)) {
+      // Small delay for animation effect
+      const timer = setTimeout(() => setShowResponse(true), 50);
+      return () => clearTimeout(timer);
+    }
+    setShowResponse(false);
+  }, [item.responseStatus, item.response]);
+
+  // Update edited response when item response changes (e.g., after AI generates it)
+  useEffect(() => {
+    if (item.response && !isEditing) {
+      setEditedResponse(item.response);
+    }
+  }, [item.response, isEditing]);
+
+  const responseStatus: ResponseStatus = item.responseStatus || (item.response ? 'ready' : 'idle');
+  const isGenerating = responseStatus === 'generating';
+  const hasError = responseStatus === 'error';
+  const isReady = responseStatus === 'ready' || (item.response && responseStatus === 'idle');
 
   const isNeon = theme === 'neon';
   const isDark = theme === 'dark' || isNeon;
@@ -136,12 +159,41 @@ export function PreviewQueueItemCard({
       {/* Content Preview */}
       <p className={`text-xs ${colors.textMuted} line-clamp-2 mb-2`}>{item.content}</p>
 
-      {/* Response Preview (if available) - Editable */}
-      {(item.response || isEditing) && (
-        <div className={`${responseBg} border backdrop-blur-sm rounded-lg p-2.5 mb-2`}>
-          <p className={`text-xs ${responseLabelColor} font-medium mb-1`}>
-            AI Response:{isEditing && <span className="ml-1 text-green-400">(editing)</span>}
+      {/* Response Preview - with loading states */}
+      {(isReady || isGenerating || hasError || isEditing) && (
+        <div className={`${responseBg} border backdrop-blur-sm rounded-lg p-2.5 mb-2 transition-all duration-300`}>
+          <p className={`text-xs ${responseLabelColor} font-medium mb-1 flex items-center gap-1.5`}>
+            AI Response:
+            {isEditing && <span className="text-green-400">(editing)</span>}
+            {isGenerating && (
+              <span className="inline-flex items-center gap-1 text-yellow-500">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                generating...
+              </span>
+            )}
+            {hasError && (
+              <span className="inline-flex items-center gap-1 text-red-400">
+                <AlertCircle className="w-3 h-3" />
+                error
+              </span>
+            )}
           </p>
+          {isGenerating && (
+            <div className="flex items-center gap-2 py-2">
+              <div className={`h-1.5 flex-1 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                <div
+                  className={`h-full rounded-full ${isNeon ? 'bg-fuchsia-500' : 'bg-cyan-500'} animate-pulse`}
+                  style={{ width: '60%' }}
+                />
+              </div>
+              <span className={`text-xs ${colors.textMuted}`}>Analyzing...</span>
+            </div>
+          )}
+          {hasError && (
+            <p className={`text-xs text-red-400`}>
+              {item.responseError || 'Failed to generate response. Try again later.'}
+            </p>
+          )}
           {isEditing ? (
             <textarea
               value={editedResponse}
@@ -150,8 +202,12 @@ export function PreviewQueueItemCard({
               rows={3}
               autoFocus
             />
-          ) : (
-            <p className={`text-xs ${colors.text} line-clamp-2`}>{item.response}</p>
+          ) : isReady && (
+            <p
+              className={`text-xs ${colors.text} line-clamp-2 transition-opacity duration-300 ${showResponse ? 'opacity-100' : 'opacity-0'}`}
+            >
+              {item.response}
+            </p>
           )}
         </div>
       )}
@@ -170,14 +226,18 @@ export function PreviewQueueItemCard({
       <div className="flex items-center gap-1.5">
         <button
           onClick={handleCopy}
-          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ${buttonClass} backdrop-blur-sm rounded-lg transition border`}
+          disabled={!isReady || isGenerating}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ${buttonClass} backdrop-blur-sm rounded-lg transition border disabled:opacity-40 disabled:cursor-not-allowed`}
+          title={!isReady ? 'Waiting for AI response...' : 'Copy response'}
         >
           <Copy className="w-3 h-3" />
           Copy
         </button>
         <button
           onClick={handleEditClick}
-          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ${editButtonClass} backdrop-blur-sm rounded-lg transition border`}
+          disabled={!isReady || isGenerating}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ${editButtonClass} backdrop-blur-sm rounded-lg transition border disabled:opacity-40 disabled:cursor-not-allowed`}
+          title={!isReady ? 'Waiting for AI response...' : isEditing ? 'Save changes' : 'Edit response'}
         >
           {isEditing ? (
             <>
@@ -200,7 +260,9 @@ export function PreviewQueueItemCard({
         </button>
         <button
           onClick={onMarkPosted}
-          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white ${primaryButtonClass} rounded-lg transition ml-auto shadow-sm`}
+          disabled={!isReady || isGenerating}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white ${primaryButtonClass} rounded-lg transition ml-auto shadow-sm disabled:opacity-40 disabled:cursor-not-allowed`}
+          title={!isReady ? 'Waiting for AI response...' : 'Mark as posted'}
         >
           <CheckCircle className="w-3 h-3" />
           Posted

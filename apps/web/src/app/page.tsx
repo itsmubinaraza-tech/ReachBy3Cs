@@ -12,20 +12,16 @@ import {
   Shield,
   Sparkles,
   Clock,
+  Play,
 } from 'lucide-react';
 import { AnimatedTagline } from '@/components/landing/animated-tagline';
-import { SearchForm } from '@/components/landing/search-form';
-import { DashboardPreview } from '@/components/landing/dashboard-preview';
 import { ThemeSwitcher } from '@/components/landing/theme-switcher';
 import { ThemeProvider, useTheme } from '@/contexts/theme-context';
-import { useLandingSearch } from '@/hooks/use-landing-search';
-import { mockPreviewQueueItems } from '@/lib/landing/mock-preview-data';
 import { Logo } from '@/components/ui/logo';
 
 function LandingContent() {
   const router = useRouter();
   const { theme, colors } = useTheme();
-  const { search, results, isSearching, hasSearched, error, remainingSearches, isRateLimited } = useLandingSearch();
 
   const handleTryDemo = () => {
     const trialData = localStorage.getItem('reachby3cs_trial');
@@ -39,8 +35,6 @@ function LandingContent() {
       router.push('/signup?reason=trial_expired');
     }
   };
-
-  const previewItems = hasSearched ? results : mockPreviewQueueItems;
 
   // Theme-aware classes
   const isNeon = theme === 'neon';
@@ -117,7 +111,7 @@ function LandingContent() {
                 onClick={handleTryDemo}
                 className={`inline-flex items-center justify-center gap-1 bg-gradient-to-r ${buttonPrimary} text-white px-4 py-2 rounded-xl font-medium hover:opacity-90 transition shadow-lg text-sm`}
               >
-                Start Free Trial
+                Preview Demo
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -125,37 +119,33 @@ function LandingContent() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-24 pb-4 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section with CTA */}
+      <section className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
             <AnimatedTagline />
-          </div>
-        </div>
-      </section>
 
-      {/* Two-Column Search & Preview Section */}
-      <section className="py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Search Form */}
-            <div className="h-[600px]">
-              <SearchForm
-                onSearch={search}
-                isLoading={isSearching}
-                error={error}
-                remainingSearches={remainingSearches}
-                isRateLimited={isRateLimited}
-              />
+            {/* CTA Button */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/demo"
+                className={`inline-flex items-center justify-center gap-2 bg-gradient-to-r ${buttonPrimary} text-white px-8 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-xl hover:scale-105 transform`}
+              >
+                <Play className="w-5 h-5" />
+                Test it for free
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <button
+                onClick={handleTryDemo}
+                className={`inline-flex items-center justify-center gap-2 ${cardGlass} backdrop-blur-xl border px-8 py-4 rounded-2xl font-semibold text-base hover:opacity-80 transition-all ${textPrimary}`}
+              >
+                View Dashboard Demo
+              </button>
             </div>
-            {/* Right Column - Dashboard Preview */}
-            <div className="h-[600px]">
-              <DashboardPreview
-                items={previewItems}
-                isLiveMode={hasSearched}
-                isLoading={isSearching}
-              />
-            </div>
+
+            <p className={`mt-4 ${textSecondary} text-sm`}>
+              No signup required. See AI-generated responses in seconds.
+            </p>
           </div>
         </div>
       </section>

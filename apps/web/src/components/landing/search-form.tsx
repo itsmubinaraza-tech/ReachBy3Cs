@@ -111,35 +111,40 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
           </label>
           <textarea
             id="targetAudience"
+            name="targetAudience"
             value={targetAudience}
             onChange={(e) => setTargetAudience(e.target.value)}
             placeholder="e.g., Couples struggling with communication..."
             rows={2}
             className={inputClass}
             required
+            aria-describedby="targetAudience-help"
           />
         </div>
 
         {/* Timeframe Field */}
-        <div className={`${liquidFieldClass} p-4`}>
-          <label className={`block text-sm font-medium ${colors.textMuted} mb-3`}>
+        <fieldset className={`${liquidFieldClass} p-4`}>
+          <legend className={`block text-sm font-medium ${colors.textMuted} mb-3`}>
             How recent should the conversations be?
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </legend>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Time filter options">
             {timeFilterOptions.map((option) => (
               <label
                 key={option.value}
+                htmlFor={`timeFilter-${option.value}`}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all border backdrop-blur-sm ${getRadioClass(timeFilter === option.value)}`}
               >
                 <input
                   type="radio"
+                  id={`timeFilter-${option.value}`}
                   name="timeFilter"
                   value={option.value}
                   checked={timeFilter === option.value}
                   onChange={() => setTimeFilter(option.value)}
                   className="sr-only"
+                  aria-checked={timeFilter === option.value}
                 />
-                <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${getRadioDotClass(timeFilter === option.value)}`}>
+                <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${getRadioDotClass(timeFilter === option.value)}`} aria-hidden="true">
                   {timeFilter === option.value && (
                     <span className="w-1.5 h-1.5 rounded-full bg-white" />
                   )}
@@ -148,7 +153,7 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {/* Solution Field */}
         <div className={`${liquidFieldClass} p-4`}>
@@ -157,12 +162,14 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
           </label>
           <textarea
             id="solution"
+            name="solution"
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
             placeholder="e.g., An emotional intelligence app..."
             rows={2}
             className={inputClass}
             required
+            aria-describedby="solution-help"
           />
         </div>
 
