@@ -4,6 +4,32 @@ import { useState, useCallback } from 'react';
 import { agentClient, AISearchWithResponsesResult, EnhancedPost } from '@/lib/agent/client';
 import { PreviewQueueItem } from '@/lib/landing/mock-preview-data';
 
+// Rate limiting constants
+const SEARCH_LIMIT = 10;
+const STORAGE_KEY = 'reachby3cs_search_count';
+
+// Rate limiting helper functions
+function getSearchCount(): number {
+  if (typeof window === 'undefined') return 0;
+  const stored = sessionStorage.getItem(STORAGE_KEY);
+  return stored ? parseInt(stored, 10) : 0;
+}
+
+function incrementSearchCount(): number {
+  if (typeof window === 'undefined') return 0;
+  const count = getSearchCount() + 1;
+  sessionStorage.setItem(STORAGE_KEY, count.toString());
+  return count;
+}
+
+function isRateLimited(): boolean {
+  return getSearchCount() >= SEARCH_LIMIT;
+}
+
+function getRemainingSearches(): number {
+  return Math.max(0, SEARCH_LIMIT - getSearchCount());
+}
+
 export interface SearchFormData {
   targetAudience: string;
   timeFilter: number;
@@ -16,6 +42,8 @@ export interface UseLandingSearchResult {
   isSearching: boolean;
   hasSearched: boolean;
   error: string | null;
+  remainingSearches: number;
+  isRateLimited: boolean;
 }
 
 /**
@@ -96,8 +124,17 @@ export function useLandingSearch(): UseLandingSearchResult {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remainingSearches, setRemainingSearches] = useState<number>(() => getRemainingSearches());
+  const [rateLimited, setRateLimited] = useState<boolean>(() => isRateLimited());
 
   const search = useCallback(async (data: SearchFormData) => {
+    // Check rate limit before proceeding
+    if (isRateLimited()) {
+      setRateLimited(true);
+      setError('You have reached the search limit for this session. Sign up for unlimited searches!');
+      return;
+    }
+
     setIsSearching(true);
     setError(null);
 
@@ -119,6 +156,12 @@ export function useLandingSearch(): UseLandingSearchResult {
         ['reddit.com', 'stackoverflow.com', 'news.ycombinator.com'],
         5 // Limit to 5 for faster response generation
       );
+
+      // Increment search count after successful search
+      incrementSearchCount();
+      const remaining = getRemainingSearches();
+      setRemainingSearches(remaining);
+      setRateLimited(remaining === 0);
 
       // Transform to queue items (now includes AI responses)
       const queueItems = transformToQueueItems(searchResult);
@@ -145,5 +188,7 @@ export function useLandingSearch(): UseLandingSearchResult {
     isSearching,
     hasSearched,
     error,
+    remainingSearches,
+    isRateLimited: rateLimited,
   };
 }

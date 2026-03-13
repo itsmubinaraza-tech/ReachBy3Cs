@@ -5,12 +5,13 @@ crawls across different platforms.
 """
 
 import asyncio
+import hashlib
 import logging
 import time
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Request
 from pydantic import BaseModel, Field
 
 from src.crawlers.base import CrawledPost, CrawlResult
@@ -21,10 +22,76 @@ from src.crawlers.scheduler import (
     get_scheduler,
 )
 from src.crawlers.ai_search import generate_search_queries
+from src.db.supabase import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/crawlers", tags=["crawlers"])
+
+
+# Anonymous Analytics Functions
+
+def _categorize_target_audience(target_audience: str) -> str:
+    """Categorize target audience into generic categories (no PII).
+
+    Args:
+        target_audience: The raw target audience description.
+
+    Returns:
+        A generic category string for analytics.
+    """
+    audience_lower = target_audience.lower()
+
+    # Map to generic categories
+    if any(word in audience_lower for word in ["business", "entrepreneur", "startup", "company"]):
+        return "business"
+    elif any(word in audience_lower for word in ["developer", "programmer", "engineer", "tech"]):
+        return "technical"
+    elif any(word in audience_lower for word in ["health", "fitness", "medical", "wellness"]):
+        return "health"
+    elif any(word in audience_lower for word in ["finance", "money", "invest", "budget"]):
+        return "finance"
+    elif any(word in audience_lower for word in ["family", "parent", "child", "couple"]):
+        return "family"
+    elif any(word in audience_lower for word in ["student", "learn", "education", "school"]):
+        return "education"
+    elif any(word in audience_lower for word in ["market", "sales", "advertis", "brand"]):
+        return "marketing"
+    else:
+        return "general"
+
+
+async def log_anonymous_search(
+    platforms: list[str],
+    result_count: int,
+    target_audience_category: str,
+    session_hash: str | None = None,
+) -> None:
+    """Log anonymous search for analytics (no PII stored).
+
+    Args:
+        platforms: List of platforms searched.
+        result_count: Number of results returned.
+        target_audience_category: Generic category of target audience.
+        session_hash: Optional hashed session ID (one-way hash).
+    """
+    try:
+        supabase = get_supabase_client()
+        if not supabase.is_connected:
+            logger.debug("Supabase not connected, skipping analytics logging")
+            return
+
+        supabase.table("anonymous_search_analytics").insert({
+            "platforms_searched": platforms,
+            "result_count": result_count,
+            "target_audience_category": target_audience_category,
+            "session_hash": session_hash,
+        }).execute()
+
+        logger.debug(f"Logged anonymous search analytics: {result_count} results")
+    except Exception as e:
+        # Don't fail the search if analytics fails
+        logger.warning(f"Failed to log anonymous search analytics: {e}")
 
 
 # Request/Response Models
@@ -659,6 +726,18 @@ async def ai_search_with_responses(
     for post in enhanced_posts:
         if post.error:
             all_errors.append(f"Post {post.external_id}: {post.error}")
+
+    # Log anonymous analytics (non-blocking, no PII)
+    platforms = request.platforms or ["reddit.com", "stackoverflow.com", "news.ycombinator.com"]
+    target_category = _categorize_target_audience(request.target_audience)
+    asyncio.create_task(
+        log_anonymous_search(
+            platforms=platforms,
+            result_count=len(enhanced_posts),
+            target_audience_category=target_category,
+            session_hash=None,  # No session tracking from API
+        )
+    )
 
     return AISearchWithResponsesResponse(
         posts=enhanced_posts,

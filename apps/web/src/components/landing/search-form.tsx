@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Loader2, AlertCircle } from 'lucide-react';
 import { SearchFormData } from '@/hooks/use-landing-search';
 import { useTheme } from '@/contexts/theme-context';
 
@@ -9,6 +10,8 @@ interface SearchFormProps {
   onSearch: (data: SearchFormData) => Promise<void>;
   isLoading: boolean;
   error: string | null;
+  remainingSearches: number;
+  isRateLimited: boolean;
 }
 
 const timeFilterOptions = [
@@ -19,7 +22,7 @@ const timeFilterOptions = [
   { value: 7, label: '1 week' },
 ];
 
-export function SearchForm({ onSearch, isLoading, error }: SearchFormProps) {
+export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRateLimited }: SearchFormProps) {
   const { theme, colors } = useTheme();
   const [targetAudience, setTargetAudience] = useState('');
   const [timeFilter, setTimeFilter] = useState(365);
@@ -163,8 +166,34 @@ export function SearchForm({ onSearch, isLoading, error }: SearchFormProps) {
           />
         </div>
 
+        {/* Rate Limit Warning */}
+        {remainingSearches <= 3 && remainingSearches > 0 && !isRateLimited && (
+          <div className={`p-3 flex items-start gap-2 ${isNeon ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' : isDark ? 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30' : 'bg-yellow-50 text-yellow-700 border-yellow-300/50'} backdrop-blur-sm rounded-xl text-sm border`}>
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              {remainingSearches} {remainingSearches === 1 ? 'search' : 'searches'} remaining.{' '}
+              <Link href="/signup" className="underline font-medium hover:opacity-80">
+                Sign up for unlimited
+              </Link>
+            </span>
+          </div>
+        )}
+
+        {/* Rate Limit Reached */}
+        {isRateLimited && (
+          <div className={`p-3 flex items-start gap-2 ${isNeon ? 'bg-red-500/30 text-red-300 border-red-500/40' : isDark ? 'bg-red-500/20 text-red-400 border-red-400/30' : 'bg-red-50 text-red-700 border-red-300/50'} backdrop-blur-sm rounded-xl text-sm border`}>
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              Search limit reached.{' '}
+              <Link href="/signup" className="underline font-medium hover:opacity-80">
+                Sign up for unlimited searches
+              </Link>
+            </span>
+          </div>
+        )}
+
         {/* Error Message */}
-        {error && (
+        {error && !isRateLimited && (
           <div className={`p-3 ${isNeon ? 'bg-red-500/30 text-red-300 border-red-500/40' : 'bg-red-500/20 text-red-700 border-red-300/30'} backdrop-blur-sm rounded-xl text-sm border`}>
             {error}
           </div>
@@ -172,7 +201,7 @@ export function SearchForm({ onSearch, isLoading, error }: SearchFormProps) {
 
         {/* Submit Button Area */}
         <div className="mt-auto pt-4">
-          <button type="submit" disabled={isLoading} className={buttonClass}>
+          <button type="submit" disabled={isLoading || isRateLimited} className={buttonClass}>
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />

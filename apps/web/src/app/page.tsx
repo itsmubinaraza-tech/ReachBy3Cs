@@ -25,7 +25,7 @@ import { Logo } from '@/components/ui/logo';
 function LandingContent() {
   const router = useRouter();
   const { theme, colors } = useTheme();
-  const { search, results, isSearching, hasSearched, error } = useLandingSearch();
+  const { search, results, isSearching, hasSearched, error, remainingSearches, isRateLimited } = useLandingSearch();
 
   const handleTryDemo = () => {
     const trialData = localStorage.getItem('reachby3cs_trial');
@@ -144,6 +144,8 @@ function LandingContent() {
                 onSearch={search}
                 isLoading={isSearching}
                 error={error}
+                remainingSearches={remainingSearches}
+                isRateLimited={isRateLimited}
               />
             </div>
             {/* Right Column - Dashboard Preview */}
