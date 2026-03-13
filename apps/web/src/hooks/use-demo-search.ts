@@ -226,56 +226,59 @@ export function useDemoSearch(): UseDemoSearchResult {
         return;
       }
 
-      // Show posts immediately with 'idle' status
-      setResults(queueItems);
+      // Show posts immediately with 'generating' status (all at once for parallel)
+      const itemsWithGenerating = queueItems.map((item) => ({
+        ...item,
+        responseStatus: 'generating' as ResponseStatus,
+      }));
+      setResults(itemsWithGenerating);
       setHasSearched(true);
       setIsSearching(false);
       setTotalCount(queueItems.length);
 
-      // PHASE 2: Progressive analysis
-      // Analyze each post and update UI as responses arrive
+      // PHASE 2: Parallel analysis
+      // Analyze ALL posts in parallel for faster response time
       setIsAnalyzing(true);
 
-      for (const item of queueItems) {
-        // Check if cancelled
-        if (cancelledRef.current) {
-          break;
-        }
-
+      // Create analysis promises for all posts
+      const analysisPromises = queueItems.map(async (item) => {
         const itemId = item.id;
-        setAnalyzingCount((prev) => prev + 1);
-
-        // Mark current item as 'generating'
-        setResults((prev) =>
-          prev.map((p) =>
-            p.id === itemId ? { ...p, responseStatus: 'generating' as ResponseStatus } : p
-          )
-        );
 
         try {
-          // Analyze this post through the AI pipeline
+          // Check if cancelled before starting
+          if (cancelledRef.current) {
+            return { itemId, success: false, cancelled: true };
+          }
+
+          // Analyze this post through the AI pipeline (parallel)
           const analysis = await agentClient.analyzePost(
             item.content,
             item.platform,
             data.solution.trim(),
-            data.targetAudience.trim()
+            data.targetAudience.trim(),
+            'ReachBy3Cs Demo' // Required app_name parameter
           );
 
           // Check if cancelled after async call
           if (cancelledRef.current) {
-            break;
+            return { itemId, success: false, cancelled: true };
           }
 
-          // Update item with analysis results
+          // Update this specific item with analysis results
           setResults((prev) =>
             prev.map((p) =>
               p.id === itemId ? updateItemWithAnalysis(p, analysis) : p
             )
           );
+
+          // Increment completed count
+          setAnalyzingCount((prev) => prev + 1);
+
+          return { itemId, success: true };
         } catch (analysisError) {
           console.error(`Analysis error for post ${itemId}:`, analysisError);
 
-          // Mark this item as error but continue with others
+          // Mark this item as error
           setResults((prev) =>
             prev.map((p) =>
               p.id === itemId
@@ -287,8 +290,16 @@ export function useDemoSearch(): UseDemoSearchResult {
                 : p
             )
           );
+
+          // Still increment count (this one is done, even if failed)
+          setAnalyzingCount((prev) => prev + 1);
+
+          return { itemId, success: false, error: analysisError };
         }
-      }
+      });
+
+      // Wait for all parallel requests to complete
+      await Promise.allSettled(analysisPromises);
 
       setIsAnalyzing(false);
     } catch (err) {

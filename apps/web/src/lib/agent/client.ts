@@ -93,7 +93,7 @@ interface PipelineAnalyzeRequest {
   text: string;
   platform: string;
   tenant_context: {
-    app_name?: string;
+    app_name: string;
     value_prop: string;
     target_audience?: string;
   };
@@ -257,7 +257,8 @@ class AgentServiceClient {
     content: string,
     platform: string,
     solution: string,
-    targetAudience: string
+    targetAudience: string,
+    appName: string = 'ReachBy3Cs Demo'
   ): Promise<PipelineAnalyzeResult> {
     return this.fetch<PipelineAnalyzeResult>('/pipeline/analyze', {
       method: 'POST',
@@ -265,6 +266,7 @@ class AgentServiceClient {
         text: content,
         platform,
         tenant_context: {
+          app_name: appName,
           value_prop: solution,
           target_audience: targetAudience,
         },
