@@ -3,6 +3,8 @@
  * Shown to new visitors before they perform a search
  */
 
+export type ResponseStatus = 'idle' | 'generating' | 'ready' | 'error';
+
 export interface PreviewQueueItem {
   id: string;
   platform: 'reddit' | 'quora' | 'twitter' | 'linkedin' | 'stackoverflow' | 'hackernews';
@@ -25,6 +27,9 @@ export interface PreviewQueueItem {
   };
   riskLevel?: 'low' | 'medium' | 'high' | 'blocked';
   ctsScore?: number;
+  // Progressive loading status
+  responseStatus?: ResponseStatus;
+  responseError?: string;
 }
 
 export interface PreviewActivity {

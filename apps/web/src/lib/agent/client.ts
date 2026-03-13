@@ -89,6 +89,37 @@ interface AISearchWithResponsesResult {
   rate_limited: boolean;
 }
 
+interface PipelineAnalyzeRequest {
+  text: string;
+  platform: string;
+  tenant_context: {
+    app_name?: string;
+    value_prop: string;
+    target_audience?: string;
+  };
+}
+
+interface PipelineAnalyzeResult {
+  signal: {
+    keywords: string[];
+    emotional_intensity: number;
+    intent_score: number;
+  };
+  risk: {
+    level: 'low' | 'medium' | 'high' | 'blocked';
+    reasons: string[];
+  };
+  response: {
+    value_first: string;
+    soft_cta: string;
+    contextual: string;
+    recommended: string;
+  };
+  cta_level: number;
+  cts_score: number;
+  can_auto_post: boolean;
+}
+
 interface ScheduleRequest {
   name: string;
   platform: string;
@@ -219,6 +250,29 @@ class AgentServiceClient {
   }
 
   /**
+   * Analyze a single post through the AI pipeline without saving to database.
+   * Used for progressive loading - analyze posts one at a time.
+   */
+  async analyzePost(
+    content: string,
+    platform: string,
+    solution: string,
+    targetAudience: string
+  ): Promise<PipelineAnalyzeResult> {
+    return this.fetch<PipelineAnalyzeResult>('/pipeline/analyze', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: content,
+        platform,
+        tenant_context: {
+          value_prop: solution,
+          target_audience: targetAudience,
+        },
+      } as PipelineAnalyzeRequest),
+    });
+  }
+
+  /**
    * Schedule a recurring crawl
    */
   async scheduleCrawl(request: ScheduleRequest): Promise<{ job_id: string; message: string; next_run: string | null }> {
@@ -284,4 +338,5 @@ export type {
   ScheduleRequest,
   EnhancedPost,
   AISearchWithResponsesResult,
+  PipelineAnalyzeResult,
 };
