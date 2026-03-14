@@ -114,7 +114,7 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
             name="targetAudience"
             value={targetAudience}
             onChange={(e) => setTargetAudience(e.target.value)}
-            placeholder="e.g., Couples struggling with communication..."
+            placeholder="e.g., Workplace communication and relationship building..."
             rows={2}
             className={`${inputClass} text-sm sm:text-base py-2 sm:py-3`}
             required
@@ -165,7 +165,7 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
             name="solution"
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
-            placeholder="e.g., An emotional intelligence app..."
+            placeholder="e.g., Our product coaches leaders in real time what to say and how to say it..."
             rows={2}
             className={`${inputClass} text-sm sm:text-base py-2 sm:py-3`}
             required
