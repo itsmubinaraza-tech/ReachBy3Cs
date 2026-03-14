@@ -197,14 +197,14 @@ function LandingContent() {
 
           {/* CTA Buttons */}
           <div
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <Link
               href="/demo"
               className={`group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r ${buttonPrimary} text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-lg sm:text-xl hover:scale-105 transition-all shadow-2xl w-full sm:w-auto`}
             >
               <Play className="w-5 h-5 sm:w-6 sm:h-6" />
-              Test It Free
+              Try It Free Now
               <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" />
             </Link>
             <button
@@ -225,6 +225,9 @@ function LandingContent() {
               Review Demo
             </button>
           </div>
+          <p className={`${textMuted} text-sm mb-8 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+            No credit card required. See results in seconds.
+          </p>
 
           {/* Social Proof */}
           <div
