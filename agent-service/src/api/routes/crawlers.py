@@ -514,11 +514,11 @@ async def ai_search(request: AISearchRequest) -> CrawlResultResponse:
     3. Searches across platforms with those queries
     4. Returns combined, deduplicated results
     """
-    # Generate AI-optimized search queries
+    # Generate AI-optimized search queries (reduced to 2 for speed)
     queries = await generate_search_queries(
         target_audience=request.target_audience,
         solution=request.solution,
-        num_queries=5,
+        num_queries=2,
     )
 
     logger.info(f"AI generated queries: {queries}")
@@ -536,45 +536,49 @@ async def ai_search(request: AISearchRequest) -> CrawlResultResponse:
     # Get the Google crawler
     crawler = await get_crawler("google")
 
-    # Default platforms if not specified
+    # Default platforms if not specified (reduced to 2 for speed)
     platforms = request.platforms or [
         "reddit.com",
         "stackoverflow.com",
-        "news.ycombinator.com",
     ]
 
-    # Search with each query and combine results
+    # Search with queries in PARALLEL for speed
+    async def search_query(query: str) -> tuple[list[dict], list[str], float, bool]:
+        """Search a single query and return results."""
+        try:
+            result = await crawler.search_discussions(
+                keywords=[query],
+                platforms=platforms,
+                limit=request.limit,
+            )
+            posts = [post.model_dump() for post in result.posts]
+            return posts, result.errors, result.crawl_time_seconds, result.rate_limited
+        except Exception as e:
+            logger.error(f"Error searching with query '{query}': {e}")
+            return [], [f"Query '{query}' failed: {str(e)}"], 0.0, False
+
+    # Run all queries in parallel
+    search_results = await asyncio.gather(*[search_query(q) for q in queries])
+
+    # Combine results
     all_posts: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     total_errors: list[str] = []
     total_time = 0.0
     rate_limited = False
 
-    for query in queries:
-        try:
-            result = await crawler.search_discussions(
-                keywords=[query],
-                platforms=platforms,
-                limit=request.limit // len(queries) + 2,  # Distribute limit across queries
-            )
+    for posts, errors, time_taken, was_limited in search_results:
+        total_time = max(total_time, time_taken)  # Parallel, so take max not sum
+        rate_limited = rate_limited or was_limited
+        total_errors.extend(errors)
 
-            total_time += result.crawl_time_seconds
-            rate_limited = rate_limited or result.rate_limited
-            total_errors.extend(result.errors)
-
-            # Deduplicate by URL
-            for post in result.posts:
-                post_url = post.external_url or ""
-                if post_url and post_url not in seen_urls:
-                    seen_urls.add(post_url)
-                    all_posts.append(post.model_dump())
-
-                    if len(all_posts) >= request.limit:
-                        break
-
-        except Exception as e:
-            logger.error(f"Error searching with query '{query}': {e}")
-            total_errors.append(f"Query '{query}' failed: {str(e)}")
+        for post in posts:
+            post_url = post.get("external_url") or ""
+            if post_url and post_url not in seen_urls:
+                seen_urls.add(post_url)
+                all_posts.append(post)
+                if len(all_posts) >= request.limit:
+                    break
 
     return CrawlResultResponse(
         platform="google",
