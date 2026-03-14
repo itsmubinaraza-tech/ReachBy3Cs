@@ -135,9 +135,9 @@ function DemoContent() {
           )}
 
           {/* Two-Column Search & Preview Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             {/* Left Column - Search Form */}
-            <div className="h-[600px]">
+            <div className="min-h-fit lg:h-[600px]">
               <SearchForm
                 onSearch={handleSearch}
                 isLoading={isSearching}
@@ -147,7 +147,7 @@ function DemoContent() {
               />
             </div>
             {/* Right Column - Dashboard Preview */}
-            <div className="h-[600px]">
+            <div className="h-[400px] lg:h-[600px]">
               <DashboardPreview
                 items={previewItems}
                 isLiveMode={hasSearched}

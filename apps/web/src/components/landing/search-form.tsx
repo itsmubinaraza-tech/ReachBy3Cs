@@ -92,22 +92,22 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
     : 'liquid-glass-field';
 
   return (
-    <div className={`${fluidFrameClass} p-5 h-full flex flex-col`}>
+    <div className={`${fluidFrameClass} p-3 sm:p-5 h-full flex flex-col`}>
       {/* Form Header */}
-      <div className="mb-4">
-        <h2 className={`text-xl font-bold ${colors.text}`}>
+      <div className="mb-3 sm:mb-4">
+        <h2 className={`text-lg sm:text-xl font-bold ${colors.text}`}>
           Find People Talking About Issues You Solve
         </h2>
-        <p className={`text-sm ${colors.textMuted} mt-1`}>
+        <p className={`text-xs sm:text-sm ${colors.textMuted} mt-1`}>
           Discover conversations where your solution can help
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
         {/* Issue Field */}
-        <div className={`${liquidFieldClass} p-4`}>
+        <div className={`${liquidFieldClass} p-3 sm:p-4`}>
           <label htmlFor="targetAudience" className={labelClass}>
-            Briefly describe the problem people are talking about that your product helps solve.
+            What problem does your product solve?
           </label>
           <textarea
             id="targetAudience"
@@ -116,23 +116,23 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
             onChange={(e) => setTargetAudience(e.target.value)}
             placeholder="e.g., Couples struggling with communication..."
             rows={2}
-            className={inputClass}
+            className={`${inputClass} text-sm sm:text-base py-2 sm:py-3`}
             required
             aria-describedby="targetAudience-help"
           />
         </div>
 
         {/* Timeframe Field */}
-        <fieldset className={`${liquidFieldClass} p-4`}>
-          <legend className={`block text-sm font-medium ${colors.textMuted} mb-3`}>
-            How recent should the conversations be?
+        <fieldset className={`${liquidFieldClass} p-3 sm:p-4`}>
+          <legend className={`block text-xs sm:text-sm font-medium ${colors.textMuted} mb-2 sm:mb-3`}>
+            How recent should conversations be?
           </legend>
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Time filter options">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2" role="radiogroup" aria-label="Time filter options">
             {timeFilterOptions.map((option) => (
               <label
                 key={option.value}
                 htmlFor={`timeFilter-${option.value}`}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all border backdrop-blur-sm ${getRadioClass(timeFilter === option.value)}`}
+                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all border backdrop-blur-sm ${getRadioClass(timeFilter === option.value)}`}
               >
                 <input
                   type="radio"
@@ -144,21 +144,21 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
                   className="sr-only"
                   aria-checked={timeFilter === option.value}
                 />
-                <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${getRadioDotClass(timeFilter === option.value)}`} aria-hidden="true">
+                <span className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 flex items-center justify-center ${getRadioDotClass(timeFilter === option.value)}`} aria-hidden="true">
                   {timeFilter === option.value && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white" />
                   )}
                 </span>
-                <span className="text-sm font-medium">{option.label}</span>
+                <span className="text-xs sm:text-sm font-medium">{option.label}</span>
               </label>
             ))}
           </div>
         </fieldset>
 
         {/* Solution Field */}
-        <div className={`${liquidFieldClass} p-4`}>
+        <div className={`${liquidFieldClass} p-3 sm:p-4`}>
           <label htmlFor="solution" className={labelClass}>
-            Briefly describe how your product solves this problem.
+            How does your product solve it?
           </label>
           <textarea
             id="solution"
@@ -167,7 +167,7 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
             onChange={(e) => setSolution(e.target.value)}
             placeholder="e.g., An emotional intelligence app..."
             rows={2}
-            className={inputClass}
+            className={`${inputClass} text-sm sm:text-base py-2 sm:py-3`}
             required
             aria-describedby="solution-help"
           />
@@ -207,22 +207,22 @@ export function SearchForm({ onSearch, isLoading, error, remainingSearches, isRa
         )}
 
         {/* Submit Button Area */}
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-3 sm:pt-4">
           <button type="submit" disabled={isLoading || isRateLimited} className={buttonClass}>
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 Searching...
               </>
             ) : (
               <>
-                <Search className="w-5 h-5" />
+                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
                 Go find conversations
               </>
             )}
           </button>
-          <p className={`text-xs ${colors.textMuted} text-center mt-3`}>
-            We&apos;ll search Reddit, Quora, and other platforms
+          <p className={`text-xs ${colors.textMuted} text-center mt-2 sm:mt-3`}>
+            We&apos;ll search Reddit, StackOverflow & more
           </p>
         </div>
       </form>
