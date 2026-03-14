@@ -702,14 +702,14 @@ async def ai_search_with_responses(
                 return enhanced
 
             try:
-                # Run pipeline with timeout (10 seconds per post)
+                # Run pipeline with timeout (45 seconds for 5 sequential LLM calls)
                 result = await asyncio.wait_for(
                     pipeline.run_async(
                         text=content,
                         platform=platform,
                         tenant_context=tenant_context,
                     ),
-                    timeout=15.0,
+                    timeout=45.0,
                 )
 
                 # Extract response data
