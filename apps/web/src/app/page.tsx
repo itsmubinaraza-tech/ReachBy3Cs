@@ -152,7 +152,7 @@ function LandingContent() {
       </nav>
 
       {/* Hero Section - First Screen */}
-      <section className="min-h-screen flex items-center justify-center px-4 sm:px-6">
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
         <div className="max-w-5xl mx-auto w-full text-center">
           {/* All content centered */}
           <div
@@ -160,10 +160,10 @@ function LandingContent() {
           >
             {/* Problem statement */}
             <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-1`}>
-              Your product solves a <span className={`${textPrimary} font-medium`}>real problem</span>.
+              You build products that solve <span className={`${textPrimary} font-medium`}>real problems</span>.
             </p>
             <p className={`text-lg sm:text-xl lg:text-2xl ${textSecondary} mb-8 sm:mb-12`}>
-              Your users don&apos;t even know it exists.
+              But your users don&apos;t know if that solution exists.
             </p>
 
             {/* Centered animated words */}
@@ -209,7 +209,17 @@ function LandingContent() {
             </Link>
             <button
               onClick={handleViewDashboard}
-              className={`inline-flex items-center justify-center gap-2 ${cardGlass} backdrop-blur-xl border px-8 py-4 rounded-2xl font-semibold text-base hover:scale-105 transition-all ${textPrimary} w-full sm:w-auto`}
+              className={`inline-flex items-center justify-center gap-2 ${
+                isNeon
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-violet-500/40'
+                  : isDark
+                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-purple-500/40'
+                  : isEarthy
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-orange-500/40'
+                  : isCalm
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/40'
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-purple-500/40'
+              } px-8 py-4 rounded-2xl font-semibold text-base hover:scale-105 transition-all shadow-lg w-full sm:w-auto`}
             >
               <Sparkles className="w-5 h-5" />
               Review Demo
@@ -243,8 +253,8 @@ function LandingContent() {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className={`text-center mt-auto pb-8 ${textSecondary}`}>
+        {/* Scroll Indicator - centered at bottom */}
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 text-center ${textSecondary}`}>
           <a href="#features" className="inline-flex flex-col items-center gap-1 hover:opacity-70 transition">
             <span className="text-sm">Learn more</span>
             <ChevronDown className="w-5 h-5 animate-bounce" />
